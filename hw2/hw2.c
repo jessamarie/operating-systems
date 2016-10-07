@@ -16,7 +16,7 @@ Date Due: 10/3/2016
 #include <sys/wait.h>
 #include <unistd.h>
 
-char* readfile(char * filename, size_t*);
+char* readfile(FILE *, size_t*);
 char** parseExpression(char *, int *, size_t);
 void printExpression(char**, int);
 int evaluateExpression(char**, int, int);
@@ -84,6 +84,16 @@ int getResult(char op, int operands[], int nth_child){
     else if(op == '/'){
         result = operands[0];
         for (next = 1; next < nth_child; next++){
+
+            if (operands[next] == 0)  {
+
+              printf("PID %d: ERROR: division by zero is not allowed; exiting\n", getpid());
+              int status;
+              wait(&status);
+              exit(EXIT_SUCCESS);
+
+          }
+
                 result = result/operands[next];
         }
     }
@@ -116,7 +126,6 @@ int evaluateExpression(char** elements, int count, int rp){
     }
 
 
-
   while (i < count) {
 
     int num = -1;
@@ -129,7 +138,7 @@ int evaluateExpression(char** elements, int count, int rp){
       if (op == '/' && i > 0) {
 
           if(*elements[i] == '0') {
-            printf( "PID %d: ERROR: division by zero not allowed; exiting\n", getpid());
+            printf( "PID %d: ERROR: division by zero is not allowed; exiting\n", getpid());
             int status;
             wait(&status);
             exit(EXIT_FAILURE);
@@ -168,33 +177,13 @@ int evaluateExpression(char** elements, int count, int rp){
           printExpression(subExp, subCount);
           printf("\"\n");
 
-          num = evaluateExpression(subExp, subCount, p[nthChild][1]);
+          evaluateExpression(subExp, subCount, p[nthChild][1]);
 
-          if (op == '/' && nthChild > 0) {
-
-            if (child_result == 0)  {
-
-              printf( "PID %d: ERROR: division by zero not allowed; exiting\n", getpid());
-              int status;
-              wait(&status);
-              exit(EXIT_FAILURE);
-
+          int j;
+          for(j = 0; j < subCount; j++){
+            free(subExp[j]);
           }
-
-        }
-
-          /** Write the number to the pipe **/
-          if (num != 0) {
-
-            close(p[nthChild][0]);
-            p[nthChild][0] = -1;
-            write(p[nthChild][1], &num, sizeof(num));
-
-          } else {
-
-            perror("Can't evaluate expression");
-
-          }
+          free(subExp);
 
         }
 
@@ -228,7 +217,7 @@ int evaluateExpression(char** elements, int count, int rp){
 
   int child = 0;
 
-  while (child < numChildren)c{
+  while (child < numChildren) {
 
     close (p[child][1]);
     p[child][1] = -1;
@@ -252,7 +241,7 @@ int evaluateExpression(char** elements, int count, int rp){
 
     int result = getResult(op, operands, numChildren);
 
-    if(rp != -1) {
+    if(rp != -1) { /** If rp = -1, we are in the top-level/parent **/
 
       child_result = result;
       write( rp, &result, sizeof(result) );
@@ -261,7 +250,8 @@ int evaluateExpression(char** elements, int count, int rp){
       printExpression(elements, count);
 
       printf("\"; sending \"%d\" on pipe to parent\n", result);
-      return rp;
+
+      return 0;
 
     } else {
 
@@ -459,28 +449,11 @@ char** parseExpression(char * expression, int * count, size_t len) {
 
   } /** ends while  **/
 
-#if 0
-   printf("count is %d\n", *count);
-   int k = 0;
-  while (k  < *count){
-    printf("ELEMENT at %d: %s \n", k, elements[k]);
-    k++;
-  }
-#endif
-
   return elements;
 
 }
 
-char* readfile(char * filename, size_t *len){
-
-  /** Open the file **/
-  FILE * file;
-
-  if( (file = fopen(filename, "r") ) == NULL) {
-    fprintf(stderr, "unable to open file %s", filename);
-    exit(EXIT_FAILURE);
-  }
+char* readfile(FILE * file, size_t *len){
 
   char buff[40]; /** This will hold the expression we want parsed **/
   char* expression = malloc( sizeof( char ) );;
@@ -525,12 +498,19 @@ int main( int argc, char * argv[]){
     return EXIT_FAILURE;
   }
 
+  /** Open the file **/
+  FILE * file;
+
+  if( (file = fopen(argv[1], "r") ) == NULL) {
+    fprintf(stderr, "unable to open file %s", argv[1]);
+    exit(EXIT_FAILURE);
+  }
+
   size_t len = 0;  /** The length of the expression  **/
-  char* expression = readfile(argv[1], &len);
+  char* expression = readfile(file, &len);
 
   int count = 0;    /** The number of elements in the elements array **/
   char** elements = parseExpression(expression, &count, len);
-
 
   /** Now that all the elements of the expression are broken up,
       that is, we have a dynamically allocated array of elements,
@@ -549,8 +529,13 @@ int main( int argc, char * argv[]){
   printExpression(elements, count);
   printf("\"; final answer is \"%d\"", answer);
 
-
+  fclose(file);
   free(expression);
+
+  int j;
+  for(j = 0; j < count; j++){
+    free(elements[j]);
+    }
   free(elements);
 
   return EXIT_SUCCESS;
