@@ -1,7 +1,11 @@
 package project1;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -18,13 +22,18 @@ public class Project1 {
 		String outputfile = args[1];
 
 		Set<Process> processes = new HashSet<Process>();
-
+		
+		/** read data from the input file **/
+		
 		try {
 			readData(inputfile, processes);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Error can't find file: "
 					+ inputfile + " " + e);
 		}
+		
+		
+		/** Simulate each algorithm **/
 		
 		Simulator sim = new Simulator();
 		Statistics fcfs = new Statistics();
@@ -35,8 +44,18 @@ public class Project1 {
 		fcfs.setType("RR");
 		
 		
+		sim.doFCFS(processes, fcfs);
+		sim.doSJF(processes, sjf);
+		sim.doRR(processes, rr);
 		
-		System.out.println("Finished reading");
+		/** write data to the output file **/
+		
+		try {
+			writeData(outputfile, fcfs, sjf, rr);
+		} catch (IOException e) {
+			throw new IllegalArgumentException("Error can't find file: "
+					+ inputfile + " " + e);
+		}
 
 	}
 
@@ -44,7 +63,7 @@ public class Project1 {
 	 * @param: filename The path to the text file that contains the processes                                                                                                
 	 * @param: process A set to store all of the processes
 	 * @effects: Reads processes in from a file
-	 * @throws: IOException if file cannot be read                                                                               
+	 * @throws:                                                                           
 	 */
 
 	public static void readData(String filename, Set<Process> processes)  throws IOException {
@@ -107,6 +126,46 @@ public class Project1 {
 		} /** End while **/
 		
 		reader.close();
+	}
+	
+	/** 
+	 * writeData creates an output file
+	 * 
+	 * @param filename the name of the output file
+	 * @param: fcfs the set of first in first out statistics                                                                                               
+	 * @param: sjf the set of shortest job first statistics
+	 * @param: rr the set round robin statistics    
+	 * @throws IOException 
+	 * @effects: writes processes into an output file
+	 * @throws:                                                                           
+	 */
+	
+	private static void writeData(String filename, Statistics fcfs, Statistics sjf, Statistics rr) throws IOException {
+	
+		try {
+			
+			File file = new File(filename);
+			file.createNewFile();
+			
+			BufferedWriter writer = new BufferedWriter(new FileWriter(file.getAbsoluteFile()));
+			
+			writer.write(fcfs.toString());
+			writer.newLine();
+			writer.write(sjf.toString());
+			writer.newLine();
+			writer.write(rr.toString());
+
+			writer.flush();
+			writer.close();
+			
+		} catch (FileNotFoundException e) {
+			System.out.println("File Not Found");
+			System.exit(1);
+		} catch (IOException e) {
+			System.out.println("something messed up");
+			System.exit(1);
+		}
+		
 	}
 
 }

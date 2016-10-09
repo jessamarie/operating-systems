@@ -120,7 +120,7 @@ public class Statistics {
     	 "-- average wait time: " + df.format(getAvgWaitTime()) + " ms" + "\n" +
     	 "-- average turnaround time: " + df.format(getAvgTurnAroundTime()) + " ms" + "\n" +
     	 "-- total number of context switches: " + getTotalNumContextSwitches() + "\n" +
-    	 "-- total number of preemptions: " + getTotalNumPreemptions() + "\n";
+    	 "-- total number of preemptions: " + getTotalNumPreemptions();
     	 
     }
 
