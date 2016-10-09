@@ -1,0 +1,18 @@
+Algorithm RR
+-- average CPU burst time: 122.22 ms
+-- average wait time: 10.23 ms
+-- average turnaround time: 122.22 ms
+-- total number of context switches: 10
+-- total number of preemptions: 5
+Algorithm null
+-- average CPU burst time: .00 ms
+-- average wait time: .00 ms
+-- average turnaround time: .00 ms
+-- total number of context switches: 0
+-- total number of preemptions: 0
+Algorithm null
+-- average CPU burst time: .00 ms
+-- average wait time: .00 ms
+-- average turnaround time: .00 ms
+-- total number of context switches: 0
+-- total number of preemptions: 0
