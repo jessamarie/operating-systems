@@ -13,6 +13,13 @@ public class Process {
 	private int cpuBurstTime;
 	private int numBursts;
 	private int ioTime;
+	private ProcessState processState;
+	private enum ProcessState {
+		READY,
+		BLOCKED,
+		RUNNING,
+		FINISHED;
+	}
 
 	public Process(String processID, int initalArrivalTime, int cpuBurstTime, int numBursts, int ioTime) {
 		super();
@@ -41,6 +48,14 @@ public class Process {
 
 	public int getIoTime() {
 		return ioTime;
+	}
+	
+	public ProcessState getProcessState() {
+		return processState;
+	}
+	
+	public void setProcessState(ProcessState ps) {
+		this.processState = ps;
 	}
 	
     /**
