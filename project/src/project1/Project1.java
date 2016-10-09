@@ -31,6 +31,8 @@ public class Project1 {
 			throw new IllegalArgumentException("Error can't find file: "
 					+ inputfile + " " + e);
 		}
+
+		/** Simulate each algorithm **/
 		
 		
 		/** Simulate each algorithm **/
