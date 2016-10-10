@@ -41,14 +41,12 @@ public class FCFS extends Algorithm{
 		int n = processes.size();   /* starting number of processes to process*/
 
 		/* Notes:
-		 * Wait time = Elapsed time - Time Entry to Ready Queue
-		 * -- Time that it is in the ready queue
-		 * -- does not include ioBursts, or context switch time
+		 * Wait time = Time Since Entry to Ready Queue - ioBursts - Context Switch Time
 		 * 
 		 * AvgWaitTime = (wt_1 + wt_2 + wt_3 + ... + wt_n)/n 
 		 * 
 		 * 
-		 * avgCPUBurstTime
+		 * avgCPUBurstTime = Sum of all bursts
 		 * -- Does not include context switch times
 		 * 
 		 * TurnaroundTime =  wait time + burst time 
@@ -83,6 +81,9 @@ public class FCFS extends Algorithm{
 		/* Continue loop until all processes have been finished */
 
 		while (!isFinished(processes)) {
+			
+			elapsedTime += t_cs; /* Add context switch time to elapsedTime */
+			
 
 			for(Process process: processes){
 
@@ -123,7 +124,12 @@ public class FCFS extends Algorithm{
 
 				p.setProcessState(ProcessState.RUNNING);
 
-				p.setStartTime(elapsedTime);
+				
+				/* Set start time for process only if this is the first
+				 * time it has been in the ready queue*/
+				if (p.getNumBursts() == p.getCurrentBurst()) {
+					p.setStartTime(elapsedTime);
+				}
 
 				p.addCPUBurst(elapsedTime);
 
@@ -135,7 +141,7 @@ public class FCFS extends Algorithm{
 				/* if this process still has bursts left add it to the blocking queue
 				 * and change it's state, otherwise this process is finished */
 
-				if ( p.getNumBursts() > 0 ) {
+				if ( p.getCurrentBurst() > 0 ) {
 
 					p.setProcessState(ProcessState.BLOCKED);
 
@@ -163,6 +169,8 @@ public class FCFS extends Algorithm{
 				}
 
 			} /* End Outer Else */
+			
+			numContextSwitches++;
 
 		} /* End While */
 
@@ -170,25 +178,30 @@ public class FCFS extends Algorithm{
 		fcfs.setAvgWaitTime(totalWaitTime/n);
 		fcfs.setAvgTurnAroundTime(totalTurnAroundTime/n);
 		fcfs.setAvgBurstTime(totalCPUBurstTime/n);
-		
-		System.out.println();
-		System.out.println(fcfs.toString());
-
+		fcfs.setTotalNumContextSwitches(numContextSwitches);
 		
 		System.out.println("OUTPUT time " + elapsedTime + "ms: Simulator ended for FCFS");
 
+		System.out.println();
+		System.out.println(fcfs.toString());
+		
 	}
+	
 
-	public void printInterestingEvent(int t, String details, Queue<Process> q){
+	public void printInterestingEvent(int t, String details, Queue<Process> q) {
+		
 		System.out.println("time " + t + "ms: " + details + " [Q" + q.toString() + "]");
+		
 	}
 
-	public boolean isFinished(ArrayList<Process> processes){
+	public boolean isFinished(ArrayList<Process> processes) {
 
 		for (Process process : processes) {
 
-			if (process.getProcessState() != ProcessState.FINISHED){
+			if (process.getProcessState() != ProcessState.FINISHED) {
+			
 				return false;
+			
 			}
 		}
 

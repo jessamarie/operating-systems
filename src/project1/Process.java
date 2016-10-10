@@ -21,6 +21,7 @@ public class Process {
 	
 	private int startTime = 0;
 	private int finishTime = 0;
+	private int currentBurst;
 	
 	// Other Possibilites: workTimeLeft, timeTillArrival, currentTime
 		
@@ -40,7 +41,9 @@ public class Process {
 		this.cpuBurstTime = cpuBurstTime;
 		this.numBursts = numBursts;
 		this.ioTime = ioTime;
+		
 		this.processState = ProcessState.NEW;
+		this.currentBurst = numBursts;
 	}
 	
 
@@ -90,8 +93,8 @@ public class Process {
 	/**
 	 * @param waitTime the waitTime to set
 	 */
-	public void setWaitTime(int waitTime) {
-		this.waitTime = waitTime;
+	public void setWaitTime(int startTime) {
+		this.waitTime = waitTime + startTime;
 	}
 	
 	/**
@@ -153,13 +156,22 @@ public class Process {
 	public void setFinishTime(int finishTime) {
 		this.finishTime = finishTime;
 	}
+	
+	/**
+	 * @return the elapsedTime plus the cpuBurstTime
+	 */
+	
+	public int getCurrentBurst() {
+		return currentBurst;
+	}
 
 	/**
 	 * @effects subtracts one from the number of bursts
 	 */
 	public void decrementNumBursts() {
-		this.numBursts = this.numBursts - 1;
+		this.currentBurst = this.currentBurst - 1;
 	}
+	
 	
 	/**
 	 * @return the elapsedTime plus the cpuBurstTime
@@ -183,8 +195,7 @@ public class Process {
     public String toString() {
     	 return getProcessID() + "|" + getInitalArrivalTime() + "|" 
                 + getCpuBurstTime() + "|" + getNumBursts() + "|" + getIoTime(); 
-    }
-    
+    }    
     
 }
 
