@@ -1,10 +1,14 @@
 package project1;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
 public class RR extends Algorithm{
+
+	private LinkedList<Process> readyQueue = new LinkedList<Process>();   /* process is ready to use the CPU */
+	private LinkedList<Process> blockedQueue = new LinkedList<Process>(); /* process state waiting during IO */
 
 	public RR(List<Process> processes) {
 		super(processes);
@@ -16,7 +20,11 @@ public class RR extends Algorithm{
 	}
 	
 	public void run(ArrayList<Process> processes, Statistics rr) {
+		printInterestingEvent(0, "Start of simulation for RR", readyQueue);
+
+		int n = processes.size();   /* starting number of processes to process*/
 		
+		rr.setType("RR");
 	}
 
 
