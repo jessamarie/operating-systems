@@ -5,14 +5,6 @@ import java.text.DecimalFormat;
 /** 
  * 
  * This class makes generating output easier. This output is of the form:
-
-Algorithm FCFS
--- average CPU burst time: ###.## ms
--- average wait time: ###.## ms
--- average turnaround time: ###.## ms
--- total number of context switches: ##
--- total number of preemptions: ##
-
  *
  */
 
@@ -104,7 +96,6 @@ public class Statistics {
 
 	
     /**
-     * TODO: DECIMAL PLACES MUST BE 2 
      * 
      * Returns a String representation of this object
      * 

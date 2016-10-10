@@ -1,5 +1,7 @@
 package project1;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -8,11 +10,15 @@ import java.util.Set;
 public class Simulator {
 
 	/** 
-	 * Empty Contructor                                                                              
+	 * Empty Constructor                                                                              
 	 */
 
 	public Simulator() {
-		// TODO Auto-generated constructor stub
+		
+	}
+	
+	public void work(ArrayList<Process> p, int n, int m, int t_cs){
+		
 	}
 
 	/**
@@ -20,19 +26,41 @@ public class Simulator {
 	 * 
 	 * @param: processes the current processes we are working with                                                                                
 	 * @param: fcfs to keep track of the statistics for output
-	 * @effects: 
+	 * @effects:
 	 */
 
-	public void doFCFS(Set<Process> processes, Statistics fcfs){
+	public void doFCFS(ArrayList<Process> processes, Statistics fcfs){
 
-//		Set<Process> sortedProcesses = sortProcessBy(processes, "arrival");
-//		for (Process p : processes) {
+		ArrayList<Process> sortedProcesses = processes;
+		Collections.sort(sortedProcesses, new ProcessSortByArrivalTime());
+		
+		LinkedList<Process> readyQueue = new LinkedList<Process>();   /* process is ready to use the CPU */
+		LinkedList<Process> blockedQueue = new LinkedList<Process>(); /* process state waiting during IO */
+
+		int elapsedTime = 0;
+		int n = sortedProcesses.size();   /* starting number of processes to process*/
+		int m = 1;                        /* default num of processes available in the cpu */
+		int t_cs = 8;					  /* default time to context switch */
+
+		
+		
+		printInterestingEvent(elapsedTime, "Start of simulation for FCFS", readyQueue);
+		
+		while (n > 0) {
 			
-//		}
-		int t = 0;
+			//work(sortedProcesses, n, m, t_cs);
+		
+		
+			
+		
+		} /* End While */
+
+		
+/*/
+
 		int totalTime = 0;
 		Set<Process> processesCopy = processes; //So we don't change the original
-		LinkedList<Process> readyQueue = new LinkedList<Process>();
+
 		for (Process p : processesCopy) {
 			totalTime += ( (p.getNumBursts() * p.getCpuBurstTime()) + ( (p.getNumBursts()-1)*p.getIoTime() ) ) ; 
 		}
@@ -46,22 +74,17 @@ public class Simulator {
 						processesCopy.remove(p);
 					}
 				}
-			}
-			
-			
+			}		
 			
 			t++;
-		}
-		// This is how we set the Statisics:
-		fcfs.setAvgBurstTime(122.22);
-		fcfs.setAvgWaitTime(10.23);
-		fcfs.setAvgTurnAroundTime(122.22);
-		fcfs.setTotalNumContextSwitches(10);
-		fcfs.setTotalNumPreemptions(5);
+		}*/
+
 		
 		// OUTPUT time <t>m: Simulator ended for FCFS
 	}
 
+	
+	
 	/**
 	 * This method computes the shortest job first algorithm
 	 * 
@@ -70,7 +93,7 @@ public class Simulator {
 	 * @effects: 
 	 */
 
-	public void doSJF(Set<Process> processes, Statistics sjf){
+	public void doSJF(ArrayList<Process> processes, Statistics sjf){
 
 
 		// OUTPUT time <t>m: Simulator ended for SJF
@@ -85,7 +108,7 @@ public class Simulator {
 	 * @effects: 
 	 */
 
-	public void doRR(Set<Process> processes, Statistics rr){
+	public void doRR(ArrayList<Process> processes, Statistics rr){
 		
 		
 		

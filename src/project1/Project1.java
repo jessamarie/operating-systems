@@ -7,6 +7,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,7 +23,7 @@ public class Project1 {
 		String inputfile = args[0];
 		String outputfile = args[1];
 
-		Set<Process> processes = new HashSet<Process>();
+		ArrayList<Process> processes = new ArrayList<Process>();
 		
 		/** read data from the input file **/
 		
@@ -32,26 +34,42 @@ public class Project1 {
 					+ inputfile + " " + e);
 		}
 		
+		ArrayList<Process> sortedProcesses = processes;
 		
 		/** Simulate each algorithm **/
 		
-		Simulator sim = new Simulator();
-		Statistics fcfs = new Statistics();
-		fcfs.setType("FCFS");
-		Statistics sjf = new Statistics();
-		fcfs.setType("SJF");
-		Statistics rr = new Statistics();
-		fcfs.setType("RR");
+		
+		Collections.sort(sortedProcesses, new ProcessSortByArrivalTime());
+
+		FCFS fcfs = new FCFS(sortedProcesses);
+		
+		Statistics fcfsStats = new Statistics();
+		
+		fcfs.run(processes, fcfsStats);
 		
 		
-		sim.doFCFS(processes, fcfs);
-		sim.doSJF(processes, sjf);
-		sim.doRR(processes, rr);
+		// sort by ?
+		
+		SJF sjf = new SJF(sortedProcesses);
+		
+		Statistics sjfStats = new Statistics();
+		
+		sjf.run(processes, sjfStats);
+		
+		
+		// sort by ?
+		
+		RR rr = new RR(sortedProcesses);
+		
+		Statistics rrStats = new Statistics();
+		
+		rr.run(processes, rrStats);
+
 		
 		/** write data to the output file **/
 		
 		try {
-			writeData(outputfile, fcfs, sjf, rr);
+			writeData(outputfile, fcfsStats, sjfStats, rrStats);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Error can't find file: "
 					+ inputfile + " " + e);
@@ -66,7 +84,7 @@ public class Project1 {
 	 * @throws:                                                                           
 	 */
 
-	public static void readData(String filename, Set<Process> processes)  throws IOException {
+	public static void readData(String filename, ArrayList<Process> processes)  throws IOException {
 		
 		BufferedReader reader = new BufferedReader(new FileReader(filename));
 		

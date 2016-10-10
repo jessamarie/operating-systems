@@ -1,5 +1,7 @@
 package project1;
 
+import java.util.Comparator;
+
 /** This class defines processes of the form 
  *  <proc-id>|<initial-arrival-time>|<cpu-burst-time>|<num-bursts>|<io-time>
  *  A|0|168|5|287
@@ -13,8 +15,18 @@ public class Process {
 	private int cpuBurstTime;
 	private int numBursts;
 	private int ioTime;
+	
+	private int waitTime;
+	private int turnAroundTime;
+	
+	private int startTime = 0;
+	private int finishTime = 0;
+	
+	// Other Possibilites: workTimeLeft, timeTillArrival, currentTime
+		
 	private ProcessState processState;
-	private enum ProcessState {
+	public enum ProcessState {
+		NEW,
 		READY,
 		BLOCKED,
 		RUNNING,
@@ -28,45 +40,183 @@ public class Process {
 		this.cpuBurstTime = cpuBurstTime;
 		this.numBursts = numBursts;
 		this.ioTime = ioTime;
+		this.processState = ProcessState.NEW;
 	}
+	
 
+	/**
+	 * @return the processID
+	 */
 	public String getProcessID() {
 		return processID;
 	}
 
+	/**
+	 * @return the initial arrival time
+	 */
 	public int getInitalArrivalTime() {
 		return initalArrivalTime;
 	}
 
+	/**
+	 * @return the cput burst time
+	 */
 	public int getCpuBurstTime() {
 		return cpuBurstTime;
 	}
 
+	/**
+	 * @return the number of bursts
+	 */
 	public int getNumBursts() {
 		return numBursts;
 	}
 
+	/**
+	 * @return the io time
+	 */
 	public int getIoTime() {
 		return ioTime;
 	}
 	
+	
+	/**
+	 * @return the process wait time state
+	 */
+	public int getWaitTime() {
+		return waitTime;
+	}
+	
+	/**
+	 * @param waitTime the waitTime to set
+	 */
+	public void setWaitTime(int waitTime) {
+		this.waitTime = waitTime;
+	}
+	
+	/**
+	 * @return the process wait time state
+	 */
+	public int getTurnAroundTime() {
+		return turnAroundTime;
+	}
+	
+	/**
+	 * @param turnAroundTime the turnAroundTime to set
+	 */
+	public void setTurnAroundTime(int turnAroundTime) {
+		this.turnAroundTime = turnAroundTime;
+	}
+	
+	
+	/**
+	 * @return the processState
+	 */
 	public ProcessState getProcessState() {
 		return processState;
 	}
 	
-	public void setProcessState(ProcessState ps) {
-		this.processState = ps;
+	/**
+	 * @param processState the processState to set
+	 */
+	public void setProcessState(ProcessState processState) {
+		this.processState = processState;
 	}
 	
+	/**
+	 * @return the startTime
+	 */
+	public int getStartTime() {
+		return startTime;
+	}
+
+
+	/**
+	 * @param startTime the startTime to set
+	 */
+	public void setStartTime(int startTime) {
+		this.startTime = startTime;
+	}
+	
+	
+	/**
+	 * @return the finishTime
+	 */
+	public int getFinishTime() {
+		return finishTime;
+	}
+
+
+	/**
+	 * @param finishTime the finishTime to set
+	 */
+	public void setFinishTime(int finishTime) {
+		this.finishTime = finishTime;
+	}
+
+	/**
+	 * @effects subtracts one from the number of bursts
+	 */
+	public void decrementNumBursts() {
+		this.numBursts = this.numBursts - 1;
+	}
+	
+	/**
+	 * @return the elapsedTime plus the cpuBurstTime
+	 */
+	public void addCPUBurst(int elapsedTime){
+		finishTime += cpuBurstTime;
+	}
+	
+	/**
+	 * @return the elapsedTime plus the ioTime
+	 */
+	public void addIOBurst(int elapsedTime){
+		finishTime += ioTime;
+	}
+	
+	
     /**
-     * Returns a String representation of this object
-     * 
      * @return String representation of this process
      */
+	
     public String toString() {
     	 return getProcessID() + "|" + getInitalArrivalTime() + "|" 
-                + getCpuBurstTime() + "|" + getNumBursts() + "|" + getIoTime();
-    	 
+                + getCpuBurstTime() + "|" + getNumBursts() + "|" + getIoTime(); 
     }
+    
+    
+}
 
+
+/**
+ * @effects Compares processes by arrival time
+ * 
+ */
+
+class ProcessSortByArrivalTime implements Comparator<Process>{
+
+	@Override
+	public int compare(Process p1, Process p2) {
+		
+		int i = 0;
+		
+    	if (p1.getInitalArrivalTime() > p2.getInitalArrivalTime()) {
+    		i = 1;
+    	}
+    	else if (p1.getInitalArrivalTime() == p2.getInitalArrivalTime()) {
+    		i = 0;
+    	}
+    	else {
+    		i = -1;
+    	}
+    	
+    	if (i != 0) {
+    		return i;
+    	} else {
+    		return p1.getProcessID().compareTo(p2.getProcessID());
+    	}
+    	
+	}
+	
 }
