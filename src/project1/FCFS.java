@@ -80,10 +80,7 @@ public class FCFS extends Algorithm{
 		
 		/* Continue loop until all processes have been finished */
 
-		while (!isFinished(processes)) {
-			
-			elapsedTime += t_cs; /* Add context switch time to elapsedTime */
-			
+		while (!isFinished(processes)) {			
 
 			for(Process process: processes){
 
@@ -132,6 +129,8 @@ public class FCFS extends Algorithm{
 				}
 
 				p.addCPUBurst(elapsedTime);
+				
+				totalCPUBurstTime += p.getCpuBurstTime();
 
 				p.decrementNumBursts();
 
@@ -152,11 +151,13 @@ public class FCFS extends Algorithm{
 
 				} else {
 
-					p.setWaitTime(elapsedTime - p.getInitalArrivalTime());
+					p.setWaitTime(p.getStartTime() - p.getInitalArrivalTime());
 
-					p.setTurnAroundTime(p.getWaitTime() + p.getCpuBurstTime());
+					p.setTurnAroundTime(elapsedTime - p.getInitalArrivalTime());
+
+					//p.setTurnAroundTime(p.getWaitTime() + p.getCpuBurstTime());
 					
-					totalCPUBurstTime += p.getCpuBurstTime();
+					//totalCPUBurstTime += p.getCpuBurstTime();
 
 					totalWaitTime += p.getWaitTime();
 
@@ -165,12 +166,16 @@ public class FCFS extends Algorithm{
 					p.setProcessState(ProcessState.FINISHED);
 
 					printInterestingEvent(elapsedTime, "Process terminated", readyQueue);
+					
+					numContextSwitches++; /* Increment num context switches */
+					
+					elapsedTime += t_cs; /* Add context switch time to elapsedTime */
 
 				}
 
 			} /* End Outer Else */
 			
-			numContextSwitches++;
+			
 
 		} /* End While */
 
@@ -188,7 +193,7 @@ public class FCFS extends Algorithm{
 	}
 	
 
-	public void printInterestingEvent(int t, String details, Queue<Process> q) {
+	private void printInterestingEvent(int t, String details, Queue<Process> q) {
 		
 		System.out.println("time " + t + "ms: " + details + " [Q" + q.toString() + "]");
 		

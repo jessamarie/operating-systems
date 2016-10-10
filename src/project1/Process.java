@@ -229,5 +229,30 @@ class ProcessSortByArrivalTime implements Comparator<Process>{
     	}
     	
 	}
+}
 	
+class ProcessSortByCPUBurstTime implements Comparator<Process>{
+
+	@Override
+	public int compare(Process p1, Process p2) {
+
+		int i = 0;
+
+		if (p1.getCpuBurstTime() > p2.getCpuBurstTime()) {
+			i = 1;
+		}
+		else if (p1.getCpuBurstTime() == p2.getCpuBurstTime()) {
+			i = 0;
+		}
+		else {
+			i = -1;
+		}
+
+		if (i != 0) {
+			return i;
+		} else {
+			return p1.getProcessID().compareTo(p2.getProcessID());
+		}
+
+	}
 }

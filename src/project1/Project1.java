@@ -48,7 +48,7 @@ public class Project1 {
 		fcfs.run(processes, fcfsStats);
 		
 		
-		// sort by ?
+		Collections.sort(sortedProcesses, new ProcessSortByCPUBurstTime());
 		
 		SJF sjf = new SJF(sortedProcesses);
 		
