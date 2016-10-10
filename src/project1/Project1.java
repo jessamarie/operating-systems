@@ -12,6 +12,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import project1.Process.ProcessState;
+
 public class Project1 {
 
 	public static void main(String[] args) {
@@ -34,10 +36,11 @@ public class Project1 {
 					+ inputfile + " " + e);
 		}
 		
-		ArrayList<Process> sortedProcesses = processes;
+		ArrayList<Process> sortedProcesses = new ArrayList<Process>(processes) ;
 		
-		/** Simulate each algorithm **/
+		/** Simulate each algorithm **/		
 		
+		/* First Come First Serve */
 		
 		Collections.sort(sortedProcesses, new ProcessSortByArrivalTime());
 
@@ -45,8 +48,13 @@ public class Project1 {
 		
 		Statistics fcfsStats = new Statistics();
 		
-		fcfs.run(processes, fcfsStats);
+		fcfs.run(sortedProcesses, fcfsStats);
 		
+		resetProcessStates(sortedProcesses);
+		
+		/* Shortest Job First */
+		
+		sortedProcesses = new ArrayList<Process>(processes) ;
 		
 		Collections.sort(sortedProcesses, new ProcessSortByCPUBurstTime());
 		
@@ -54,17 +62,23 @@ public class Project1 {
 		
 		Statistics sjfStats = new Statistics();
 		
-		sjf.run(processes, sjfStats);
+		sjf.run(sortedProcesses, sjfStats);
 		
+		resetProcessStates(sortedProcesses);
 		
-		// sort by ?
+		/* Round Robin */
 		
+		sortedProcesses = new ArrayList<Process>(processes) ;
+		
+		Collections.sort(sortedProcesses, new ProcessSortByArrivalTime());
+
 		RR rr = new RR(sortedProcesses);
 		
 		Statistics rrStats = new Statistics();
 		
-		rr.run(processes, rrStats);
-
+		rr.run(sortedProcesses, rrStats);
+		
+		resetProcessStates(sortedProcesses);
 		
 		/** write data to the output file **/
 		
@@ -75,6 +89,13 @@ public class Project1 {
 					+ inputfile + " " + e);
 		}
 
+	}
+
+	private static void resetProcessStates(ArrayList<Process> processes) {
+		for (Process p: processes ) {
+			p.setProcessState(ProcessState.NEW);
+		}
+		
 	}
 
 	/** 

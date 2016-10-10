@@ -5,6 +5,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
+import project1.Process.ProcessState;
+
 public class RR extends Algorithm{
 
 	private LinkedList<Process> readyQueue = new LinkedList<Process>();   /* process is ready to use the CPU */
@@ -14,9 +16,9 @@ public class RR extends Algorithm{
 	int m = 1;                        /* default num of processes available in the CPU */
 	int t_cs = 8;					  /* default time to context switch */
 
-	private int time;
-	private int numContextSwitches;
 	private int numPreemptions;
+	private int t_slice = 84;
+	private int numContextSwitches;
 	private double totalCPUBurstTime;
 	private double totalWaitTime;
 	private double totalTurnAroundTime;
@@ -25,22 +27,168 @@ public class RR extends Algorithm{
 		super(processes);
 	}
 
-	@Override
-	public void run() {
-		
-	}
-	
 	public void run(ArrayList<Process> processes, Statistics rr) {
+
 		printInterestingEvent(0, "Start of simulation for RR", readyQueue);
 
 		int n = processes.size();   /* starting number of processes to process*/
-		
+
 		rr.setType("RR");
+
+		/* Add all processes with arrival time zero to readyQueue */
+
+		for(Process process: processes){
+
+			if(process.getInitalArrivalTime() == elapsedTime){
+
+				process.setProcessState(ProcessState.READY);
+
+				readyQueue.addLast(process);
+
+			}
+		}
+		
+		/* Continue loop until all processes have been finished */
+
+		while (!isFinished(processes)) {		
+
+			for(Process process: processes){
+
+				if(process.getInitalArrivalTime() < elapsedTime 
+						&& process.getProcessState() == ProcessState.NEW){
+
+					process.setProcessState(ProcessState.READY);
+
+					readyQueue.addLast(process);
+				}
+			}
+
+			/* If a process is in the blocked queue, it still has bursts
+			 * to calculate, otherwise we can move on to the next process
+			 */
+
+			if (!blockedQueue.isEmpty()) {
+
+				printInterestingEvent(elapsedTime, "Process started performing IO", readyQueue);
+
+				Process p = blockedQueue.pop();
+				
+				p.addIOBurst(elapsedTime);
+				
+				elapsedTime = p.getFinishTime();
+				
+				p.setProcessState(ProcessState.READY);
+				
+				readyQueue.addFirst(p);
+
+				printInterestingEvent(elapsedTime, "Process finished performing IO", readyQueue);
+
+			} else {
+
+				printInterestingEvent(elapsedTime, "Process started using the CPU", readyQueue);
+
+				Process p = readyQueue.remove();
+
+				p.setProcessState(ProcessState.RUNNING);
+				
+				/* Set start time for process only if this is the first
+				 * time it has been in the ready queue*/
+				if (p.getNumBursts() == p.getCurrentBurst()) {
+					p.setStartTime(elapsedTime);
+				}
+/*
+				if (p.getWorkTimeLeft() < t_slice ) {
+					
+				} else if () {
+					
+				} else {
+					
+				}
+	*/			
+				p.addCPUBurst(elapsedTime);
+				
+				totalCPUBurstTime += p.getCpuBurstTime();
+
+				p.decrementNumBursts();
+
+				elapsedTime = p.getFinishTime();
+							
+
+				/* if this process still has bursts left add it to the blocking queue
+				 * and change it's state, otherwise this process is finished */
+
+				if ( p.getCurrentBurst() > 0 ) {
+
+					p.setProcessState(ProcessState.BLOCKED);
+
+					blockedQueue.add(p);
+
+					printInterestingEvent(elapsedTime, "Process finished using the CPU", readyQueue);
+
+
+				} else {
+
+					p.setWaitTime(p.getStartTime() - p.getInitalArrivalTime());
+
+					p.setTurnAroundTime(elapsedTime - p.getInitalArrivalTime());
+
+					totalWaitTime += p.getWaitTime();
+
+					totalTurnAroundTime += p.getTurnAroundTime();
+
+					p.setProcessState(ProcessState.FINISHED);
+
+					printInterestingEvent(elapsedTime, "Process terminated", readyQueue);
+					
+					numContextSwitches++; /* Increment num context switches */
+					
+					elapsedTime += t_cs; /* Add context switch time to elapsedTime */
+
+				}
+
+			} /* End Outer Else */
+			
+			
+
+		} /* End While */
+
+
+		rr.setAvgWaitTime(totalWaitTime/n);
+		rr.setAvgTurnAroundTime(totalTurnAroundTime/n);
+		rr.setAvgBurstTime(totalCPUBurstTime/n);
+		rr.setTotalNumContextSwitches(numContextSwitches);
+		
+		System.out.println("OUTPUT time " + elapsedTime + "ms: Simulator ended for RR");
+
+		System.out.println();
+		System.out.println(rr.toString());
+		
+	}
+	
+
+	private void printInterestingEvent(int t, String details, Queue<Process> q) {
+		
+		//System.out.println("time " + t + "ms: " + details + " [Q" + q.toString() + "]");
+		
 	}
 
+	public boolean isFinished(ArrayList<Process> processes) {
 
-	public void printInterestingEvent(int t, String details, Queue<Process> q) {
-		System.out.println("time " + t + "ms: " + details + " [Q" + q.toString() + "]");
+		for (Process process : processes) {
+
+			if (process.getProcessState() != ProcessState.FINISHED) {
+			
+				return false;
+			
+			}
+		}
+
+		return true;
+	}
+
+	@Override
+	public void run() {
+
 	}
 
 }

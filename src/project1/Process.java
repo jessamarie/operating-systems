@@ -22,6 +22,7 @@ public class Process {
 	private int startTime = 0;
 	private int finishTime = 0;
 	private int currentBurst;
+	private int workTimeLeft;
 	
 	// Other Possibilites: workTimeLeft, timeTillArrival, currentTime
 		
@@ -41,6 +42,7 @@ public class Process {
 		this.cpuBurstTime = cpuBurstTime;
 		this.numBursts = numBursts;
 		this.ioTime = ioTime;
+		this.workTimeLeft = cpuBurstTime; 
 		
 		this.processState = ProcessState.NEW;
 		this.currentBurst = numBursts;
@@ -66,6 +68,13 @@ public class Process {
 	 */
 	public int getCpuBurstTime() {
 		return cpuBurstTime;
+	}
+	
+	/**
+	 * @return the work time left
+	 */
+	public int getWorkTimeLeft() {
+		return workTimeLeft;
 	}
 
 	/**
@@ -139,6 +148,13 @@ public class Process {
 	 */
 	public void setStartTime(int startTime) {
 		this.startTime = startTime;
+	}
+
+	/**
+	 * @param workTimeLeft the workTimeLeft to set 
+	 */
+	public void setWorkTimeLeft(int time) {
+		this.workTimeLeft = time;
 	}
 	
 	
@@ -251,7 +267,9 @@ class ProcessSortByCPUBurstTime implements Comparator<Process>{
 		if (i != 0) {
 			return i;
 		} else {
-			return p1.getProcessID().compareTo(p2.getProcessID());
+			ProcessSortByArrivalTime p = new ProcessSortByArrivalTime();
+			return p.compare(p1, p2);
+			//			return p1.getProcessID().compareTo(p2.getProcessID());
 		}
 
 	}

@@ -24,7 +24,6 @@ public class FCFS extends Algorithm{
 	int m = 1;                        /* default num of processes available in the CPU */
 	int t_cs = 8;					  /* default time to context switch */
 
-	private int time;
 	private int numContextSwitches;
 	private double totalCPUBurstTime;
 	private double totalWaitTime;
@@ -80,7 +79,7 @@ public class FCFS extends Algorithm{
 		
 		/* Continue loop until all processes have been finished */
 
-		while (!isFinished(processes)) {			
+		while (!isFinished(processes)) {		
 
 			for(Process process: processes){
 
@@ -195,7 +194,7 @@ public class FCFS extends Algorithm{
 
 	private void printInterestingEvent(int t, String details, Queue<Process> q) {
 		
-		System.out.println("time " + t + "ms: " + details + " [Q" + q.toString() + "]");
+		//System.out.println("time " + t + "ms: " + details + " [Q" + q.toString() + "]");
 		
 	}
 
