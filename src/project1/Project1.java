@@ -26,62 +26,62 @@ public class Project1 {
 		String outputfile = args[1];
 
 		ArrayList<Process> processes = new ArrayList<Process>();
-		
+
 		/** read data from the input file **/
-		
+
 		try {
 			readData(inputfile, processes);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("ERROR: Invalid input file format\n"
 					+ inputfile + " " + e);
 		}
-		
-		ArrayList<Process> sortedProcesses = new ArrayList<Process>(processes) ;
-		
-		/** Simulate each algorithm **/		
-		
+
+
+		/** Simulate each algorithm **/	
+
+
 		/* First Come First Serve */
-		
-		Collections.sort(sortedProcesses, new ProcessSortByArrivalTime());
 
-		FCFS fcfs = new FCFS(sortedProcesses);
-		
+		Collections.sort(processes, new ProcessSortByArrivalTime());
+
+		FCFS fcfs = new FCFS(processes);
+
 		Statistics fcfsStats = new Statistics();
-		
-		fcfs.run(sortedProcesses, fcfsStats);
-		
-		resetProcessStates(sortedProcesses);
-		
-		/* Shortest Job First */
-		
-		sortedProcesses = new ArrayList<Process>(processes) ;
-		
-		Collections.sort(sortedProcesses, new ProcessSortByCPUBurstTime());
-		
-		SJF sjf = new SJF(sortedProcesses);
-		
-		Statistics sjfStats = new Statistics();
-		
-		sjf.run(sortedProcesses, sjfStats);
-		
-		resetProcessStates(sortedProcesses);
-		
-		/* Round Robin */
-		
-		sortedProcesses = new ArrayList<Process>(processes) ;
-		
-		Collections.sort(sortedProcesses, new ProcessSortByArrivalTime());
 
-		RR rr = new RR(sortedProcesses);
-		
+		fcfs.run(fcfsStats);
+
+		resetProcesses(processes);
+
+
+
+		/* Shortest Job First */
+
+		Collections.sort(processes, new ProcessSortByCPUBurstTime());
+
+		SJF sjf = new SJF(processes);
+
+		Statistics sjfStats = new Statistics();
+
+		//	sjf.run(sjfStats);
+
+		resetProcesses(processes);
+
+
+		/* Round Robin */
+
+		Collections.sort(processes, new ProcessSortByArrivalTime());
+
+		RR rr = new RR(processes);
+
 		Statistics rrStats = new Statistics();
-		
-		rr.run(sortedProcesses, rrStats);
-		
-		resetProcessStates(sortedProcesses);
-		
+
+		//	rr.run(rrStats);
+
+		resetProcesses(processes);
+
+
 		/** write data to the output file **/
-		
+
 		try {
 			writeData(outputfile, fcfsStats, sjfStats, rrStats);
 		} catch (IOException e) {
@@ -91,46 +91,62 @@ public class Project1 {
 
 	}
 
-	private static void resetProcessStates(ArrayList<Process> processes) {
+
+	/** 
+	 * @param: processes the ArrayList of processes to reset
+	 * @effects: Resets the process to it's original state
+	 *                                                                   
+	 */
+
+	private static void resetProcesses(ArrayList<Process> processes) {
 		for (Process p: processes ) {
-			p.setProcessState(ProcessState.NEW);
+			p.init();
+
 		}
-		
+
 	}
 
 	/** 
 	 * @param: filename The path to the text file that contains the processes                                                                                                
-	 * @param: process A set to store all of the processes
+	 * @param: fps An ArrayList to store all of the processes for fcfs
+	 * @param: sps An ArrayList to store all of the processes for sjf
+	 * @param: rrps An ArrayList to store all of the processes for rrps
 	 * @effects: Reads processes in from a file
-	 * @throws:                                                                           
+	 * @throws:  IOException                                                                       
 	 */
 
 	public static void readData(String filename, ArrayList<Process> processes)  throws IOException {
-		
+
 		BufferedReader reader = new BufferedReader(new FileReader(filename));
-		
+
 		String line = null;
 
 		while ((line = reader.readLine()) != null) {
 
 			String[] specs; /** The properties of each process **/
-			
-			
+
 			/** If the current line begins with a letter split it by the '|' 
 			 * delimiter. otherwise, ignore and move on to the next line **/
-			
+
 			if (Character.isLetter((line.charAt(0)))) {
-				specs = line.split("\\|");            	 
+
+				specs = line.split("\\|");  
+
 			} else {
+
 				continue;
+
 			}
-			
+
 			/** Each process line should have five properties **/
 			if (specs.length < 5 || specs.length > 5){
+
 				System.err.println("ERROR: Invalid input file format");
+
 			}
 
 			String trimmedSpec = specs[0].trim();
+
 			specs[0] = trimmedSpec;
 
 			for(int j = 1; j < specs.length; j++){
@@ -138,35 +154,37 @@ public class Project1 {
 				trimmedSpec = specs[j].trim();
 
 				/** Make sure the last four properties are numbers **/
-				try  
-				{  
-					Integer.parseInt(trimmedSpec);  
-				}  
-				catch(NumberFormatException e)  
-				{  
+				try {  
+
+					Integer.parseInt(trimmedSpec); 
+
+				} catch(NumberFormatException e) {  
+
 					System.err.println("ERROR: Invalid input file format");
+
 				}  
 
 				specs[j] = trimmedSpec;
 
 			}
-			
+
+
 			/** Finally, create a process and add it to the set **/
 			String pid = specs[0];
 			int initalArrivalTime = Integer.parseInt(specs[1]);
 			int cpuBurstTime = Integer.parseInt(specs[2]); 
 			int numBursts =  Integer.parseInt(specs[3]);
 			int ioTime = Integer.parseInt(specs[4]);
-			
+
 			Process p = new Process(pid, initalArrivalTime, cpuBurstTime, numBursts, ioTime);
-			
+
 			processes.add(p);
-			
+
 		} /** End while **/
-		
+
 		reader.close();
 	}
-	
+
 	/** 
 	 * writeData creates an output file
 	 * 
@@ -178,16 +196,16 @@ public class Project1 {
 	 * @effects: writes processes into an output file
 	 * @throws:                                                                           
 	 */
-	
+
 	private static void writeData(String filename, Statistics fcfs, Statistics sjf, Statistics rr) throws IOException {
-	
+
 		try {
-			
+
 			File file = new File(filename);
 			file.createNewFile();
-			
+
 			BufferedWriter writer = new BufferedWriter(new FileWriter(file.getAbsoluteFile()));
-			
+
 			writer.write(fcfs.toString());
 			writer.newLine();
 			writer.write(sjf.toString());
@@ -196,15 +214,15 @@ public class Project1 {
 
 			writer.flush();
 			writer.close();
-			
+
 		} catch (FileNotFoundException e) {
-			System.out.println("File Not Found");
+			System.err.println("File Not Found");
 			System.exit(1);
 		} catch (IOException e) {
-			System.out.println("something messed up");
+			System.err.println("something messed up");
 			System.exit(1);
 		}
-		
+
 	}
 
 }

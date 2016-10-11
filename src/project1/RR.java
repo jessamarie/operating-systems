@@ -23,7 +23,7 @@ public class RR extends Algorithm{
 	private double totalWaitTime;
 	private double totalTurnAroundTime;
 
-	public RR(List<Process> processes) {
+	public RR(ArrayList<Process> processes) {
 		super(processes);
 	}
 
@@ -73,9 +73,9 @@ public class RR extends Algorithm{
 
 				Process p = blockedQueue.pop();
 				
-				p.addIOBurst(elapsedTime);
+			
 				
-				elapsedTime = p.getFinishTime();
+				elapsedTime = p.getBurstFinishTime();
 				
 				p.setProcessState(ProcessState.READY);
 				
@@ -93,7 +93,7 @@ public class RR extends Algorithm{
 				
 				/* Set start time for process only if this is the first
 				 * time it has been in the ready queue*/
-				if (p.getNumBursts() == p.getCurrentBurst()) {
+				if (p.getNumBursts() == p.getNumCurrentBurst()) {
 					p.setStartTime(elapsedTime);
 				}
 /*
@@ -105,19 +105,18 @@ public class RR extends Algorithm{
 					
 				}
 	*/			
-				p.addCPUBurst(elapsedTime);
 				
 				totalCPUBurstTime += p.getCpuBurstTime();
 
-				p.decrementNumBursts();
+				p.setNumBursts(p.getNumCurrentBurst() - 1);
 
-				elapsedTime = p.getFinishTime();
+				elapsedTime = p.getBurstFinishTime();
 							
 
 				/* if this process still has bursts left add it to the blocking queue
 				 * and change it's state, otherwise this process is finished */
 
-				if ( p.getCurrentBurst() > 0 ) {
+				if ( p.getNumCurrentBurst() > 0 ) {
 
 					p.setProcessState(ProcessState.BLOCKED);
 
@@ -165,12 +164,6 @@ public class RR extends Algorithm{
 		
 	}
 	
-
-	private void printInterestingEvent(int t, String details, Queue<Process> q) {
-		
-		//System.out.println("time " + t + "ms: " + details + " [Q" + q.toString() + "]");
-		
-	}
 
 	public boolean isFinished(ArrayList<Process> processes) {
 
