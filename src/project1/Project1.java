@@ -37,18 +37,18 @@ public class Project1 {
 		}
 
 
-		/** Simulate each algorithm **/	
-
-
-		/* First Come First Serve */
-
 		Collections.sort(processes, new ProcessSortByArrivalTime());
+		
+		/** Simulate each algorithm **/	
+		
+		
+		/* First Come First Serve */
 
 		FCFS fcfs = new FCFS(processes);
 
 		Statistics fcfsStats = new Statistics();
 
-		fcfs.run(fcfsStats);
+		//fcfs.run(fcfsStats);
 
 		resetProcesses(processes);
 
@@ -56,20 +56,16 @@ public class Project1 {
 
 		/* Shortest Job First */
 
-		Collections.sort(processes, new ProcessSortByCPUBurstTime());
-
 		SJF sjf = new SJF(processes);
 
 		Statistics sjfStats = new Statistics();
 
-		//	sjf.run(sjfStats);
+		sjf.run(sjfStats);
 
 		resetProcesses(processes);
 
 
 		/* Round Robin */
-
-		Collections.sort(processes, new ProcessSortByArrivalTime());
 
 		RR rr = new RR(processes);
 

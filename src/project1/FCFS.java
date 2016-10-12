@@ -1,6 +1,5 @@
 package project1;
 
-import java.util.Queue;
 import project1.Process.ProcessState;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,7 +9,7 @@ import java.util.LinkedList;
  * This class implements the First Come First Serve Algorithm
  * 
  * Overview of FCFS:
- * - processes at the current elapsed time are added to the readyQueue
+ * - processes arriving at elapsed time are added to the readyQueue
  * - while there are items in the blocking queue that are ready to return:
  *   -- remove the process from the blockedQueue and add it to the 
  *      end of the readyQueue
@@ -130,9 +129,8 @@ public class FCFS extends Algorithm {
 				}
 
 				elapsedTime += unloadTime;
-
-				/* Debugging */
-				//System.out.println("Process " + p.getProcessID() + " unloaded... " + elapsedTime + "ms");
+				
+				//System.out.println("Process " + p.getProcessID() + " unloaded... " + elapsedTime + "ms"); /* Debugging */
 
 			} else {
 
@@ -141,8 +139,9 @@ public class FCFS extends Algorithm {
 			}
 
 		} /* End While */
-
 		
+		elapsedTime -= unloadTime; /* Subtract last unload time */
+
 		/* Set Statistics */
 		fcfs.setType("FCFS");
 		fcfs.setAvgWaitTime(totalWaitTime/n);
@@ -173,7 +172,7 @@ public class FCFS extends Algorithm {
 
 		p.setProcessState(ProcessState.READY);
 
-		//System.out.println("Process " + p.getProcessID() + " is returning to the RQ");
+		//System.out.println("Process " + p.getProcessID() + " is returning to the RQ"); /* Debugging */
 
 		readyQueue.addLast(p);
 	}
@@ -196,8 +195,7 @@ public class FCFS extends Algorithm {
 
 		elapsedTime += loadTime;
 		
-		/* Debugging */
-		//System.out.println("Process " + p.getProcessID() + " loading... " + elapsedTime + "ms");
+		//System.out.println("Process " + p.getProcessID() + " loading... " + elapsedTime + "ms"); /* Debugging */
 		
 		return p;
 	}

@@ -28,9 +28,7 @@ public abstract class Algorithm {
     }
         
     public abstract void run();
-    // update current job by 1 tick
-    // check if the job queue might need to be changed.
-    // check for jobs to add to the queue
+    
     
 	/**
 	 * @param t the current elapsed time

@@ -372,9 +372,9 @@ class ProcessSortByCPUBurstTime implements Comparator<Process>{
 		if (i != 0) {
 			return i;
 		} else {
-			ProcessSortByArrivalTime p = new ProcessSortByArrivalTime();
-			return p.compare(p1, p2);
-			//			return p1.getProcessID().compareTo(p2.getProcessID());
+			//ProcessSortByArrivalTime p = new ProcessSortByArrivalTime();
+			//return p.compare(p1, p2);
+			return p1.getProcessID().compareTo(p2.getProcessID());
 		}
 
 	}
