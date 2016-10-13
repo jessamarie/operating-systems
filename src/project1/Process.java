@@ -77,7 +77,7 @@ public class Process {
 		waitTime = 0;
 		turnAroundTime = 0;
 		startTime = 0;
-		returnTime = 0;
+		returnTime = initalArrivalTime; /* Initially the processes starts at the ready queue at this time*/
 		burstFinishTime = 0;
 
 	}

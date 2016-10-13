@@ -26,6 +26,7 @@ public class FCFS extends Algorithm {
 	private LinkedList<Process> readyQueue = new LinkedList<Process>();   /* process is ready to use the CPU */
 	private LinkedList<Process> blockedQueue = new LinkedList<Process>(); /* process state blocked during IO */
 
+	private int totalNumCPUBursts = 0;
 	private int elapsedTime = 0;
 	private int m = 1;                        /* default number of processes available in the CPU */
 	private int t_cs = 8;					  /* default time to context switch */
@@ -39,6 +40,7 @@ public class FCFS extends Algorithm {
 	private double totalTurnAroundTime;
 
 	public FCFS(ArrayList<Process> processes) {
+		//super(processes, 0, 1, 8, 4, 4);
 		super(processes);
 	}
 
@@ -144,9 +146,9 @@ public class FCFS extends Algorithm {
 
 		/* Set Statistics */
 		fcfs.setType("FCFS");
-		fcfs.setAvgWaitTime(totalWaitTime/n);
-		fcfs.setAvgTurnAroundTime(totalTurnAroundTime/n);
-		fcfs.setAvgBurstTime(totalCPUBurstTime/n);
+		fcfs.setAvgWaitTime(totalWaitTime/totalNumCPUBursts);
+		fcfs.setAvgTurnAroundTime(totalTurnAroundTime/totalNumCPUBursts);
+		fcfs.setAvgBurstTime(totalCPUBurstTime/totalNumCPUBursts);
 		fcfs.setTotalNumContextSwitches(numContextSwitches);
 
 		System.out.println("OUTPUT time " + elapsedTime + "ms: Simulator ended for FCFS");
@@ -241,6 +243,8 @@ public class FCFS extends Algorithm {
 
 		numContextSwitches++;
 		
+		totalNumCPUBursts++;
+		
 	}
 	
 
@@ -306,27 +310,6 @@ public class FCFS extends Algorithm {
 		System.out.print(" started running at " + p.getStartTime());
 		System.out.print(" and finished this burst at " + p.getBurstFinishTime());
 		System.out.print(" with a wait time of " + (p.getStartTime() - p.getArrivalTime() - loadTime));
-	}
-
-	
-	/**
-	 * @param processes the ArrayList of processes to check whether all processes are 
-	 *        finished
-	 * @return true if all processes are FINISHED, o.w false
-	 */
-	
-	public boolean isFinished(ArrayList<Process> processes) {
-
-		for (Process process : processes) {
-
-			if (process.getProcessState() != ProcessState.FINISHED) {
-
-				return false;
-
-			}
-		}
-
-		return true;
 	}
 	
 

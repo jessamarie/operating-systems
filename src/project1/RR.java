@@ -12,12 +12,13 @@ import java.util.LinkedList;
  * - processes arriving at elapsed time are added to the readyQueue
  * - while there are items in the blocking queue that are ready to return:
  *   -- remove the process from the blockedQueue and add it to the 
- *      end of the readyQueue
+ *      end of the readyQueue (sort by Return time)
  * - load the first process in the readyQueue 
- * - complete the process's CPU burst
- * - unload the process, and
- *   -- added to the blocking queue, or
- *   -- terminated
+ *  - Complete a t_slice worth of the burst, unload the process and
+ *    -- if the burst's workTimeLeft is > 0 add to end of RQ
+ *    -- else < 0
+ *        -- if there are still bursts left add to the BQ
+ *        -- else terminate
  * 
  */
 
@@ -25,6 +26,8 @@ public class RR extends Algorithm {
 
 	private LinkedList<Process> readyQueue = new LinkedList<Process>();   /* process is ready to use the CPU */
 	private LinkedList<Process> blockedQueue = new LinkedList<Process>(); /* process state blocked during IO */
+	
+	private int totalNumCPUBursts = 0;
 
 	private int elapsedTime = 0;
 	private int m = 1;                        /* default number of processes available in the CPU */
@@ -103,28 +106,56 @@ public class RR extends Algorithm {
 			/* If a process is in the blocked queue, it still has bursts
 			 * to calculate, otherwise move on to the next process
 			 */
-
-			while ( (!blockedQueue.isEmpty()) && blockedQueue.getFirst().getReturnTime() <= elapsedTime){
-
-				returnToReady();
-
-			}
+			
+		
+			checkIfReadyToReturn();
 
 
 			if (!readyQueue.isEmpty()) {
 
 				Process p = loadProcess();
+				
+				if(p.getWorkTimeLeft() == 0 ) {
+					p.setWorkTimeLeft(p.getCpuBurstTime());
+				}
+				
 
-				performBurst(p); 
+							
+				performBurst(p);
 
 				//debug(p); /* Debugging */
+				
+				/** if the RQ is empty, keep performing a burst until something
+				 * enters **/
+				while ( checkIfReadyToReturn() == false && 
+						readyQueue.isEmpty() && p.getWorkTimeLeft() != 0)  {
+					
+					//System.out.println("\nprocess is continuing..,"); /* Debugging */
+					//debug(p);                                         /* Debugging */
+					
+					performBurst(p);
+					
+				}
+				
+				numContextSwitches++;
+				
 
 				/* If this process still has bursts left after this last burst, then move it to
 				 *  the blocking queue, otherwise this terminate and summarize the results */
 
-				if ( p.getNumCurrentBurst() > 0 ) {
+				if ( p.getWorkTimeLeft() == 0 && p.getNumCurrentBurst() > 0 ) {
 
 					moveToBlocked(p);
+					
+					//System.out.print(" it will return to RQ at " + p.getReturnTime() + "\n"); /* Debugging */
+					
+				} else if(p.getNumCurrentBurst() > 0) {
+					
+					checkIfReadyToReturn();
+					
+					returnToReady(p);
+					
+					//System.out.println("\nProcess " + p.getProcessID() + " is returning to the RQ"); /* Debugging */
 
 				} else {
 
@@ -133,7 +164,7 @@ public class RR extends Algorithm {
 
 				elapsedTime += unloadTime;
 				
-				//System.out.println("Process " + p.getProcessID() + " unloaded... " + elapsedTime + "ms"); /* Debugging */
+				//System.out.println("Process " + p.getProcessID() + " unloaded... " + elapsedTime + "ms\n"); /* Debugging */
 
 			} else {
 
@@ -147,17 +178,50 @@ public class RR extends Algorithm {
 
 		/* Set Statistics */
 		rr.setType("RR");
-		rr.setAvgWaitTime(totalWaitTime/n);
-		rr.setAvgTurnAroundTime(totalTurnAroundTime/n);
-		rr.setAvgBurstTime(totalCPUBurstTime/n);
+		rr.setAvgWaitTime(totalWaitTime/totalNumCPUBursts);
+		rr.setAvgTurnAroundTime(totalTurnAroundTime/totalNumCPUBursts);
+		rr.setAvgBurstTime(totalCPUBurstTime/totalNumCPUBursts);
 		rr.setTotalNumContextSwitches(numContextSwitches);
+		rr.setTotalNumPreemptions(numPreemptions);
 
 		System.out.println("OUTPUT time " + elapsedTime + "ms: Simulator ended for RR");
 
-		// System.out.println(rr.toString());
+		//System.out.println(rr.toString()); /*DEBUG*/
 
 	}
 
+	/**
+	 * @param p
+	 */
+	private void performBurst(Process p) {
+		if( p.getWorkTimeLeft() - t_slice > 0) {
+			
+			printInterestingEvent(elapsedTime, "Process started using the CPU", readyQueue);
+			
+			performBurst(p, t_slice);
+			
+			printInterestingEvent(elapsedTime, "Process finished using the CPU", readyQueue);
+			
+			p.setWorkTimeLeft(p.getWorkTimeLeft() - t_slice);
+			
+			printInterestingEvent(elapsedTime, "preemption occured", readyQueue);		
+			
+			numPreemptions++; 
+
+			
+			
+		} else { /* This burst is finally finished, just add what's left to the burst */
+			
+			performBurst(p, p.getWorkTimeLeft());
+			
+			p.setWorkTimeLeft(0);
+			
+			totalCPUBurstTime += p.getCpuBurstTime();
+			
+			p.setNumBursts(p.getNumCurrentBurst() - 1);
+
+		}
+	}
 	
 	/**
 	 * returnToReady returns a process to the readyQueue if it's return time
@@ -167,17 +231,40 @@ public class RR extends Algorithm {
 	 *          changes state to READY
 	 */
 	
-	private void returnToReady() {
+	protected void returnToReady(Process p) {
 		
-		printInterestingEvent(blockedQueue.getFirst().getReturnTime(), "Process finished performing IO", readyQueue);
-
-		Process p = blockedQueue.removeFirst();
 
 		p.setProcessState(ProcessState.READY);
 
-		//System.out.println("Process " + p.getProcessID() + " is returning to the RQ"); /* Debugging */
-
 		readyQueue.addLast(p);
+
+	}
+
+	
+	/**
+	 * checkIfReadyToReturn checks if the blockedQueue has any elements left to return
+	 * 
+	 * @effects returns any elements that are ready to the readyQueue
+	 * @return true if there were elements to return, and o.w false
+	 */
+    
+	protected boolean checkIfReadyToReturn() {
+		
+		boolean ready = false;
+		
+		while ( (!blockedQueue.isEmpty()) && blockedQueue.getFirst().getReturnTime() <= elapsedTime){
+
+			printInterestingEvent(blockedQueue.getFirst().getReturnTime(), "Process finished performing IO", readyQueue);
+			
+			Process p = blockedQueue.removeFirst();
+			
+			returnToReady(p);
+						
+			ready = true;
+			
+		}
+		
+		return ready;
 	}
 
 	
@@ -213,36 +300,25 @@ public class RR extends Algorithm {
 	 *          and totalCPUBurstTime
 	 */
 	
-	private void performBurst(Process p) {
+	private void performBurst(Process p, int addTime) {
 		
-		printInterestingEvent(elapsedTime, "Process started using the CPU", readyQueue);
 
 		p.setStartTime(elapsedTime); 		/* Set start time for this burst */		
 
-		/* Set arrival time for process only if this is not 
-		 * the first time it has been in the ready queue */
-
-		if (p.getNumBursts() != p.getNumCurrentBurst()) {
-			p.setArrivalTime(p.getReturnTime());
-		}
-		
+		p.setArrivalTime(p.getReturnTime());
+			
 		/* Perform the "burst" */
+		
+		elapsedTime += addTime;
 
-		elapsedTime += p.getCpuBurstTime();
-		
-		totalCPUBurstTime += p.getCpuBurstTime();
-		
-		printInterestingEvent(elapsedTime, "Process finished using the CPU", readyQueue);
-		
 		p.setBurstFinishTime(elapsedTime);
-
-		p.setNumBursts(p.getNumCurrentBurst() - 1);
 
 		p.setWaitTime(p.getWaitTime() + (p.getStartTime() - p.getArrivalTime()) - loadTime); /* Don't count  this processes load time */
 
 		p.setTurnAroundTime(p.getTurnAroundTime() + (p.getBurstFinishTime() - p.getArrivalTime()));
+		
+		totalNumCPUBursts++;
 
-		numContextSwitches++;
 		
 	}
 	
@@ -287,7 +363,6 @@ public class RR extends Algorithm {
 
 		p.setReturnTime(p.getBurstFinishTime() + p.getIoTime());
 
-		// System.out.print(" it will return to RQ at " + p.getReturnTime() + "\n"); /* Debugging */
 
 		blockedQueue.add(p);
 
@@ -304,34 +379,10 @@ public class RR extends Algorithm {
 	
 	private void debug(Process p) {
 		System.out.print("Process " + p.getProcessID());
-		System.out.print(" on burst " + (p.getNumCurrentBurst() + 1));
-		System.out.print(" arrived in RQ at " + p.getArrivalTime());
-		System.out.print(" started running at " + p.getStartTime());
-		System.out.print(" and finished this burst at " + p.getBurstFinishTime());
-		System.out.print(" with a wait time of " + (p.getStartTime() - p.getArrivalTime() - loadTime));
+		System.out.print(" slice started running at " + p.getStartTime());
+		System.out.print(" and finished at " + p.getBurstFinishTime());
+		System.out.print(" with a wtl of " + p.getWorkTimeLeft() );
 	}
-
-	
-	/**
-	 * @param processes the ArrayList of processes to check whether all processes are 
-	 *        finished
-	 * @return true if all processes are FINISHED, o.w false
-	 */
-	
-	public boolean isFinished(ArrayList<Process> processes) {
-
-		for (Process process : processes) {
-
-			if (process.getProcessState() != ProcessState.FINISHED) {
-
-				return false;
-
-			}
-		}
-
-		return true;
-	}
-	
 
 	@Override
 	public void run() {

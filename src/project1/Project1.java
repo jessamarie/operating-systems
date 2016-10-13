@@ -48,7 +48,7 @@ public class Project1 {
 
 		Statistics fcfsStats = new Statistics();
 
-		//fcfs.run(fcfsStats);
+		fcfs.run(fcfsStats);
 
 		resetProcesses(processes);
 
@@ -60,7 +60,7 @@ public class Project1 {
 
 		Statistics sjfStats = new Statistics();
 
-		sjf.run(sjfStats);
+		//sjf.run(sjfStats);
 
 		resetProcesses(processes);
 
@@ -71,7 +71,7 @@ public class Project1 {
 
 		Statistics rrStats = new Statistics();
 
-		//	rr.run(rrStats);
+		//rr.run(rrStats);
 
 		resetProcesses(processes);
 

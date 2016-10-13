@@ -28,6 +28,7 @@ public class SJF extends Algorithm {
 	private LinkedList<Process> readyQueue = new LinkedList<Process>();   /* process is ready to use the CPU */
 	private LinkedList<Process> blockedQueue = new LinkedList<Process>(); /* process state blocked during IO */
 
+	private int totalNumCPUBursts = 0;
 	private int elapsedTime = 0;
 	private int m = 1;                        /* default number of processes available in the CPU */
 	private int t_cs = 8;					  /* default time to context switch */
@@ -137,9 +138,9 @@ public class SJF extends Algorithm {
 		
 		/* Set Statistics */
 		sjf.setType("SJF");
-		sjf.setAvgWaitTime(totalWaitTime/n);
-		sjf.setAvgTurnAroundTime(totalTurnAroundTime/n);
-		sjf.setAvgBurstTime(totalCPUBurstTime/n);
+		sjf.setAvgWaitTime(totalWaitTime/totalNumCPUBursts);
+		sjf.setAvgTurnAroundTime(totalTurnAroundTime/totalNumCPUBursts);
+		sjf.setAvgBurstTime(totalCPUBurstTime/totalNumCPUBursts);
 		sjf.setTotalNumContextSwitches(numContextSwitches);
 
 		System.out.println("OUTPUT time " + elapsedTime + "ms: Simulator ended for SJF");
@@ -234,6 +235,8 @@ public class SJF extends Algorithm {
 
 		numContextSwitches++;
 		
+		totalNumCPUBursts++;
+		
 	}
 	
 
@@ -300,28 +303,6 @@ public class SJF extends Algorithm {
 		System.out.print(" and finished this burst at " + p.getBurstFinishTime());
 		System.out.print(" with a wait time of " + (p.getStartTime() - p.getArrivalTime() - loadTime));
 	}
-
-	
-	/**
-	 * @param processes the ArrayList of processes to check whether all processes are 
-	 *        finished
-	 * @return true if all processes are FINISHED, o.w false
-	 */
-	
-	public boolean isFinished(ArrayList<Process> processes) {
-
-		for (Process process : processes) {
-
-			if (process.getProcessState() != ProcessState.FINISHED) {
-
-				return false;
-
-			}
-		}
-
-		return true;
-	}
-	
 
 	@Override
 	public void run() {
