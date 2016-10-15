@@ -9,10 +9,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
-import project1.Process.ProcessState;
 
 public class Project1 {
 

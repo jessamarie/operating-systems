@@ -275,6 +275,7 @@ public class FCFS extends Algorithm {
 	 * @param p the process to debug
 	 */
 
+	@SuppressWarnings("unused")
 	private void debug(Process p) {
 		System.out.print("Process " + p.getProcessID());
 		System.out.print(" - total num cs " + numContextSwitches);
