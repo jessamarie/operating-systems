@@ -1,4 +1,3 @@
-package project1;
 
 import java.text.DecimalFormat;
 
@@ -103,7 +102,7 @@ public class Statistics {
      */
     public String toString() {
     	
-    	DecimalFormat df = new DecimalFormat("#.00"); 
+    	DecimalFormat df = new DecimalFormat("#0.00"); 
 
     	 return 
          "Algorithm " + getType() + "\n" +

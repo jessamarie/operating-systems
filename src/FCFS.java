@@ -1,6 +1,4 @@
-package project1;
 
-import project1.Process.ProcessState;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -8,48 +6,43 @@ import java.util.LinkedList;
 /**
  * This class implements the First Come First Serve Algorithm
  * 
- * Overview of RR:
+ * Overview of FCFS:
  * - processes arriving at elapsed time are added to the readyQueue
  * - while there are items in the blocking queue that are ready to return:
  *   -- remove the process from the blockedQueue and add it to the 
- *      end of the readyQueue (sort by Return time)
+ *      end of the readyQueue
  * - load the first process in the readyQueue 
- *  - Complete a t_slice worth of the burst, unload the process and
- *    -- if the burst's workTimeLeft is > 0 add to end of RQ
- *    -- else < 0
- *        -- if there are still bursts left add to the BQ
- *        -- else terminate
+ * - complete the process's CPU burst
+ * - unload the process, and
+ *   -- added to the blocking queue, or
+ *   -- terminated
  * 
  */
 
-public class RR extends Algorithm {
+public class FCFS extends Algorithm {
 
 	private LinkedList<Process> readyQueue = new LinkedList<Process>();   /* process is ready to use the CPU */
 	private LinkedList<Process> blockedQueue = new LinkedList<Process>(); /* process state blocked during IO */
 
 	private int totalNumCPUBursts = 0;
-
 	private int elapsedTime = 0;
 	//	private int m = 1;                        /* default number of processes available in the CPU */
 	private int t_cs = 8;					  /* default time to context switch */
 	private int loadTime = t_cs/2;
 	private int unloadTime = t_cs/2;
-	//	private int n = processes.size();   /* starting number of processes to process*/
+	//	private int n = processes.size();   /* starting number of new processes*/
 
 	private int numContextSwitches;
 	private double totalCPUBurstTime;
 	private double totalWaitTime;
 	private double totalTurnAroundTime;
 
-	private int numPreemptions;
-	private int t_slice = 84;
-
 
 	/**
 	 * Constructor
 	 */
 
-	public RR(ArrayList<Process> processes) {
+	public FCFS(ArrayList<Process> processes) {
 		super(processes);
 	}
 
@@ -58,9 +51,9 @@ public class RR extends Algorithm {
 	 * {@inheritDoc}
 	 */
 
-	public void run(Statistics rr) {
+	public void run(Statistics fcfs) {
 
-		printInterestingEvent(elapsedTime, "Simulator started for RR", readyQueue);		
+		printInterestingEvent(elapsedTime, "Simulator started for FCFS", readyQueue);		
 
 
 		/* Loop terminates when all processes are finished */
@@ -68,7 +61,7 @@ public class RR extends Algorithm {
 		while (!isFinished(processes)) {
 
 			transferArrivingProcesses();
-
+			
 			checkIfReadyToReturn();
 
 
@@ -76,51 +69,42 @@ public class RR extends Algorithm {
 
 				Process p = loadProcess();
 
-				if(p.getWorkTimeLeft() == 0 ) {
-					p.setWorkTimeLeft(p.getCpuBurstTime());
-				}
-
-				printInterestingEvent(elapsedTime, "Process " + p.toString() + " started using the CPU", readyQueue);
-
-				performBurst(p);
+				performBurst(p); 
 
 				transferArrivingProcesses();
 
-				checkIfReadyToReturn();
+				if ( p.getNumCurrentBurst() > 0 ) {
 
-				/* if the RQ is empty, keep performing the same burst until something
-				 * enters, or there is no work time left on the burst **/
+					if (!blockedQueue.isEmpty()) {
+						
+						if (blockedQueue.getFirst().getReturnTime() == p.getBurstFinishTime()){
 
-				while ( checkIfReadyToReturn() == false && 
-						readyQueue.isEmpty() && p.getWorkTimeLeft() != 0)  {
+							moveToBlocked(p);
 
-					printInterestingEvent(elapsedTime, "Time slice expired; no preemption because ready queue is empty", readyQueue);
+							checkIfReadyToReturn();
 
-					performBurst(p);
+						} else {
 
-				}
+							checkIfReadyToReturn();
 
+							moveToBlocked(p);
+						} 
+						
+					} else {
+						
+						checkIfReadyToReturn();
+						moveToBlocked(p);
+					}
 
-				/* If this process still has bursts left after this last burst, then move it to
-				 *  the blocking queue, otherwise this terminate and summarize the results */
-
-				if ( p.getWorkTimeLeft() == 0 && p.getNumCurrentBurst() > 0 ) {
-
-					moveToBlocked(p);
-
-				} else if(p.getNumCurrentBurst() > 0) {
-
-					checkIfReadyToReturn();
-
-					returnToReady(p);
-
-					printInterestingEvent(elapsedTime, "Time slice expired; process " + p.toString() + " preempted with " + p.getWorkTimeLeft() + "ms to go", readyQueue);
 
 				} else {
-
+					
+					checkIfReadyToReturn();
+					
 					terminateProcess(p);
 
 					//debug(p); /* Debugging */
+					
 				}
 
 				elapsedTime += unloadTime;
@@ -133,15 +117,15 @@ public class RR extends Algorithm {
 
 		} /* End While */
 
-		/* Set Statistics */
-		rr.setType("RR");
-		rr.setAvgWaitTime(totalWaitTime/totalNumCPUBursts);
-		rr.setAvgTurnAroundTime(totalTurnAroundTime/totalNumCPUBursts);
-		rr.setAvgBurstTime(totalCPUBurstTime/totalNumCPUBursts);
-		rr.setTotalNumContextSwitches(numContextSwitches);
-		rr.setTotalNumPreemptions(numPreemptions);
 
-		System.out.println("time " + elapsedTime + "ms: Simulator ended for RR");
+		/* Set Statistics */
+		fcfs.setType("FCFS");
+		fcfs.setAvgWaitTime(totalWaitTime/totalNumCPUBursts);
+		fcfs.setAvgTurnAroundTime(totalTurnAroundTime/totalNumCPUBursts);
+		fcfs.setAvgBurstTime(totalCPUBurstTime/totalNumCPUBursts);
+		fcfs.setTotalNumContextSwitches(numContextSwitches);
+
+		System.out.println("time " + elapsedTime + "ms: Simulator ended for FCFS\n");
 
 	}
 
@@ -154,10 +138,10 @@ public class RR extends Algorithm {
 
 		for(Process p: processes){
 
-			if(p.getProcessState() == ProcessState.NEW &&
+			if(p.getProcessState() == Process.ProcessState.NEW &&
 					p.getInitalArrivalTime() <= elapsedTime) {
 
-				p.setProcessState(ProcessState.READY);
+				p.setProcessState(Process.ProcessState.READY);
 
 				readyQueue.addLast(p);
 
@@ -192,25 +176,19 @@ public class RR extends Algorithm {
 	}
 
 
-
-
 	/**
-	 * returnToReady returns a process to the readyQueue if it's return time
-	 * is less than the elapsed time
-	 * 
-	 * @effects removes a process from blockedQueue and adds to readyQueue
-	 *          changes state to READY
+	 * {@inheritDoc}
 	 */
 
 	public void returnToReady(Process p) {
 
-		p.setProcessState(ProcessState.READY);
+		p.setProcessState(Process.ProcessState.READY);
 
 		readyQueue.addLast(p);
 
 		sort(readyQueue);
-
 	}
+
 
 	/**
 	 * {@inheritDoc}
@@ -231,7 +209,7 @@ public class RR extends Algorithm {
 
 		Process p = readyQueue.removeFirst();	
 
-		p.setProcessState(ProcessState.RUNNING);
+		p.setProcessState(Process.ProcessState.RUNNING);
 
 		elapsedTime += loadTime;
 
@@ -239,63 +217,35 @@ public class RR extends Algorithm {
 	}
 
 
+
 	/**
-	 *{@inheritDoc}
+	 * {@inheritDoc}
 	 */
 
 	public void performBurst(Process p) {
 
-		if( p.getWorkTimeLeft() - t_slice > 0) {
+		printInterestingEvent(elapsedTime, "Process " + p.toString() + " started using the CPU", readyQueue);
 
-			performBurst(p, t_slice);
-
-			p.setWorkTimeLeft(p.getWorkTimeLeft() - t_slice);
-
-			numPreemptions++; 
-
-
-		} else { /* This burst is finally finished, just add what's left to the burst */
-
-			performBurst(p, p.getWorkTimeLeft());
-
-			p.setWorkTimeLeft(0);
-
-			totalCPUBurstTime += p.getCpuBurstTime();
-
-			p.setNumBursts(p.getNumCurrentBurst() - 1);
-
-		}
-	}
-
-
-	/**
-	 * performBurst performs a cpu burst
-	 * 
-	 * @param p the process currently running
-	 * @effects performs a cpu burst and changes waitTime, TurnAroundTime, 
-	 *          numBursts, burstFinishTime, elapsedTime, numContextSwitches,
-	 *          and totalCPUBurstTime
-	 */
-
-	private void performBurst(Process p, int addTime) {
-
-
-		p.setStartTime(elapsedTime); 		/* Set start time for this burst */		
+		p.setStartTime(elapsedTime); 		/* Set start time for this burst */	
 
 		p.setArrivalTime(p.getReturnTime());
 
+
 		/* Perform the "burst" */
 
-		elapsedTime += addTime;
+		elapsedTime += p.getCpuBurstTime();
+
+		totalCPUBurstTime += p.getCpuBurstTime();
 
 		p.setBurstFinishTime(elapsedTime);
+
+		p.setNumBursts(p.getNumCurrentBurst() - 1);
 
 		p.setWaitTime(p.getWaitTime() + (p.getStartTime() - p.getArrivalTime()) - loadTime); /* Don't count  this processes load time */
 
 		p.setTurnAroundTime(p.getTurnAroundTime() + (p.getBurstFinishTime() - p.getArrivalTime()));
 
 		totalNumCPUBursts++;
-
 
 	}
 
@@ -310,7 +260,7 @@ public class RR extends Algorithm {
 
 		totalTurnAroundTime += p.getTurnAroundTime();
 
-		p.setProcessState(ProcessState.FINISHED);
+		p.setProcessState(Process.ProcessState.FINISHED);
 
 		printInterestingEvent(elapsedTime, "Process " + p.toString() + " terminated", readyQueue);
 
@@ -318,14 +268,15 @@ public class RR extends Algorithm {
 
 
 	/**
-	 * {@inheritDoc}
+	 * {@inheritDoc}         
 	 */
 
+	@Override
 	public void moveToBlocked(Process p) {
 
 		printInterestingEvent(elapsedTime, "Process " + p.toString() + " completed a CPU burst; " + p.getNumCurrentBurst() + " to go", readyQueue);
 
-		p.setProcessState(ProcessState.BLOCKED);
+		p.setProcessState(Process.ProcessState.BLOCKED);
 
 		p.setReturnTime(p.getBurstFinishTime() + p.getIoTime());
 
@@ -351,6 +302,7 @@ public class RR extends Algorithm {
 		System.out.print("; burst t added: " + p.getCpuBurstTime()); 
 		System.out.print("; Total burst t " + totalCPUBurstTime + "\n");
 	}
+
 
 	@Override
 	public void run() {

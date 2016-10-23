@@ -1,6 +1,4 @@
-package project1;
 
-import project1.Process.ProcessState;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -122,12 +120,14 @@ public class SJF extends Algorithm {
 
 		for(Process p: processes){
 
-			if(p.getProcessState() == ProcessState.NEW &&
+			if(p.getProcessState() == Process.ProcessState.NEW &&
 					p.getInitalArrivalTime() <= elapsedTime) {
 
-				p.setProcessState(ProcessState.READY);
+				p.setProcessState(Process.ProcessState.READY);
 
 				readyQueue.addLast(p);
+				
+				sort(readyQueue);
 
 				printInterestingEvent(p.getInitalArrivalTime(), "Process "+ p.toString() + " arrived", readyQueue);
 
@@ -166,7 +166,7 @@ public class SJF extends Algorithm {
 
 	public void returnToReady(Process p) {
 
-		p.setProcessState(ProcessState.READY);
+		p.setProcessState(Process.ProcessState.READY);
 
 		readyQueue.addLast(p);
 
@@ -196,7 +196,7 @@ public class SJF extends Algorithm {
 
 		Process p = readyQueue.removeFirst();	
 
-		p.setProcessState(ProcessState.RUNNING);
+		p.setProcessState(Process.ProcessState.RUNNING);
 
 		elapsedTime += loadTime;
 
@@ -246,7 +246,7 @@ public class SJF extends Algorithm {
 
 		totalTurnAroundTime += p.getTurnAroundTime();
 
-		p.setProcessState(ProcessState.FINISHED);
+		p.setProcessState(Process.ProcessState.FINISHED);
 
 		printInterestingEvent(elapsedTime, "Process " + p.toString() + " terminated", readyQueue);
 
@@ -261,7 +261,7 @@ public class SJF extends Algorithm {
 
 		printInterestingEvent(elapsedTime, "Process " + p.toString() + " completed a CPU burst; " + p.getNumCurrentBurst() + " to go", readyQueue);
 
-		p.setProcessState(ProcessState.BLOCKED);
+		p.setProcessState(Process.ProcessState.BLOCKED);
 
 		p.setReturnTime(p.getBurstFinishTime() + p.getIoTime());
 

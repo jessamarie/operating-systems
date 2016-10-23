@@ -1,10 +1,7 @@
-package project1;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
-
-import project1.Process.ProcessState;
 
 public abstract class Algorithm {
 
@@ -161,7 +158,7 @@ public abstract class Algorithm {
 
 		for (Process process : processes) {
 
-			if (process.getProcessState() != ProcessState.FINISHED) {
+			if (process.getProcessState() != Process.ProcessState.FINISHED) {
 
 				return false;
 

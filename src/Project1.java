@@ -1,4 +1,7 @@
-package project1;
+/**  Project1.java
+  *  @author Jessica Barre, Sabbir Rashid
+  */
+
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
