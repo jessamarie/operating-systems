@@ -1,0 +1,165 @@
+SAMPLE INPUT/OUTPUT FOR HOMEWORK 4
+================================================================================
+
+Test 0:
+-- start the server with "./a.out 9876"
+-- kill the server
+
+Test 0 Expected Output:
+Started server; listening on port: 9876
+
+================================================================================
+
+Test 1:
+-- start the server with "./a.out 9876"
+-- client A connects
+-- client A sends "STORE mouse.txt 917\n<mouse.txt>"  (use one packet here)
+-- client A should receive "ACK\n"
+-- client A sends "READ xyz.jpg 5555 2000\n"
+-- client A should receive "ERROR NO SUCH FILE\n"
+-- client A sends "LIST\n"
+-- client A should receive "1 mouse.txt\n"
+-- client A disconnects
+-- kill the server
+
+
+Test 1 Expected Output:
+Started server; listening on port: 9876
+Received incoming connection from: 128.113.126.29
+[child 28584] Received STORE mouse.txt 917
+[child 28584] Stored file "mouse.txt" (917 bytes)
+[child 28584] Sent ACK
+[child 28584] Received READ xyz.jpg 5555 2000
+[child 28584] Sent ERROR NO SUCH FILE
+[child 28584] Received LIST
+[child 28584] Sent 1 mouse.txt
+[child 28584] Client disconnected
+
+================================================================================
+
+Test 2:
+-- start the server with "./a.out 9876"
+-- execute the two clients below simultaneously
+
+-- client A connects
+-- client A sends "STORE legend.txt 70672\n<legend.txt>"
+                            (use multiple packets here, each 1024 bytes max)
+-- client A should receive "ACK\n"
+-- client A sends "LIST\n"
+-- client A should receive "1 legend.txt\n"
+                    --or-- "2 chicken.txt legend.txt\n"
+-- client A sends "READ chicken.txt 4 5\n"
+-- client A should receive "ACK 5\nquick"
+                    --or-- "ERROR NO SUCH FILE\n"
+-- client A disconnects
+
+-- client B connects
+-- client B sends "STORE chicken.txt 31\n<chicken.txt>"  (use one packet here)
+-- client B should receive "ACK\n"
+-- client B sends "LIST\n"
+-- client B should receive "1 chicken.txt\n"
+                    --or-- "2 chicken.txt legend.txt\n"
+-- client B disconnects
+
+-- kill the server
+
+
+Test 2 Expected Output (with BLOCK-1 and BLOCK-2 interleaved):
+Started server; listening on port: 9876
+
+BLOCK-1:
+  Received incoming connection from: 128.113.126.29
+  [child 32994] Received STORE legend.txt 70672
+  [child 32994] Stored file "legend.txt" (70672 bytes)
+  [child 32994] Sent ACK
+  [child 32994] Received LIST
+  [child 32994] Sent 1 legend.txt  --or--  Sent 2 chicken.txt legend.txt
+  [child 32994] Received READ chicken.txt 4 5
+
+  [child 32994] Sent ACK 5
+  [child 32994] Sent 5 bytes of "chicken.txt" from offset 4
+                --or--
+  [child 32994] Sent ERROR NO SUCH FILE
+
+  [child 32994] Client disconnected
+
+BLOCK-2:
+  Received incoming connection from: 128.113.126.29
+  [child 32995] Received STORE chicken.txt 31
+  [child 32995] Stored file "chicken.txt" (31 bytes)
+  [child 32995] Sent ACK
+  [child 32995] Received LIST
+  [child 32995] Sent 1 chicken.txt  --or--  Sent 2 chicken.txt legend.txt
+  [child 32995] Client disconnected
+
+================================================================================
+
+Test 3:
+-- start the server with "./a.out 9876"
+-- execute the two clients below simultaneously
+
+-- client A connects
+-- client A sends "STORE sonny1978.jpg 100774\n<sonny1978.jpg>"
+                            (use multiple packets here, each 1024 bytes max)
+-- client A should receive "ACK\n"
+-- client A sends "LIST\n"
+-- client A should receive "1 sonny1978.jpg\n"
+                    --or-- "2 ospd.txt sonny1978.jpg\n"
+-- client A sends "READ ospd.txt 104575 50\n"
+-- client A should receive "ACK 50\ncoco\ncocoa\ncocoanut\ncocoas\ncocobola\ncocobolo\ncocom"
+                    --or-- "ERROR NO SUCH FILE\n"
+-- client A disconnects
+
+-- client B connects
+-- client B sends "STORE ospd.txt 614670\n<ospd.txt>"
+                            (use multiple packets here, each 1024 bytes max)
+-- client B should receive "ACK\n"
+-- client B sends "LIST\n"
+-- client B should receive "1 ospd.txt\n"
+                    --or-- "2 ospd.txt sonny1978.jpg\n"
+-- client B sends "READ sonny1978.jpg 3000 20\n"
+-- client B should receive "ACK 20\n<20-bytes-of-binary-data>"
+                    --or-- "ERROR NO SUCH FILE\n"
+-- client B disconnects
+
+-- kill the server
+
+
+Test 3 Expected Output (with BLOCK-1 and BLOCK-2 interleaved):
+Started server; listening on port: 9876
+
+BLOCK-1:
+  Received incoming connection from: 128.113.126.29
+  [child 49752] Received STORE sonny1978.jpg 100774
+  [child 49752] Stored file "sonny1978.jpg" (100774 bytes)
+  [child 49752] Sent ACK
+  [child 49752] Received LIST
+  [child 49752] Sent 1 sonny1978.jpg  --or--
+                Sent 2 ospd.txt sonny1978.jpg
+  [child 49752] Received READ ospd.txt 104575 50
+
+  [child 49752] Sent ACK 50
+  [child 49752] Sent 50 bytes of "ospd.txt" from offset 104575
+                --or--
+  [child 49752] Sent ERROR NO SUCH FILE
+
+  [child 49752] Client disconnected
+
+BLOCK-2:
+  Received incoming connection from: 128.113.126.29
+  [child 49755] Received STORE ospd.txt 614670
+  [child 49755] Stored file "ospd.txt" (641670 bytes)
+  [child 49755] Sent ACK
+  [child 49755] Received LIST
+  [child 49755] Sent 1 ospd.txt  --or--
+                Sent 2 ospd.txt sonny1978.jpg
+  [child 49755] Received READ sonny1978.jpg 3000 20
+
+  [child 49755] Sent ACK 20
+  [child 49755] Sent 20 bytes of "sonny1978.jpg" from offset 3000
+                --or--
+  [child 49755] Sent ERROR NO SUCH FILE
+
+  [child 49755] Client disconnected
+
+================================================================================

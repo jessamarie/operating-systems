@@ -12,6 +12,7 @@ Date Due: Nov 7, 2016
 #include <dirent.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 #define TWICE 2
 
