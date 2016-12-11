@@ -83,19 +83,19 @@ public class Frames {
 
 		return divider1 + frames + divider2;
 	}
-	
+
 	public int getRows() {
 		return rows;
 	}
-	
+
 	public int getColumns() {
 		return columns;
 	}
-	
+
 	public int getSize() {
 		return getRows()*getColumns();
 	}
-	
+
 
 	/**
 	 * scanForNextFit returns the starting position of
@@ -109,7 +109,22 @@ public class Frames {
 		int fillableBlocks = 0;
 		int endPosition = 0;
 
+		/* start from the last fit process */
 		for (i = start; i < getSize() && fillableBlocks < blocksToFill; i++) {
+
+
+			if ( blocks.get(i) == "." ) {
+				fillableBlocks++;
+				endPosition = i;
+
+			} else {
+				fillableBlocks = 0;
+			}
+
+		}
+
+		/* continue from beginning if there is no space found */
+		for (i = 0; i < start && fillableBlocks < blocksToFill; i++) {
 
 
 			if ( blocks.get(i) == "." ) {
@@ -158,7 +173,7 @@ public class Frames {
 			}
 
 		}
-		
+
 		return i;
 	}
 

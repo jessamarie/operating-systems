@@ -31,8 +31,8 @@ public class NextFit extends Algorithm {
 	private int loadTime = t_cs/2;
 	private int unloadTime = t_cs/2;
 	//	private int n = processes.size();   /* starting number of new processes*/
-	
-	
+
+
 	private int lastFitLocation = 0; /* The location of the last fit */
 
 
@@ -49,114 +49,100 @@ public class NextFit extends Algorithm {
 	/**
 	 * {@inheritDoc}
 	 */
-	
+
 	@Override
 	public void run() {
-		
+
 		Frames frames = new Frames();
 
 		printInterestingEvent(elapsedTime, "Simulator started (Contiguous -- Next-Fit)");		
 
+		transferArrivingProcesses();
 
 		/* Loop terminates when all processes are finished */
 
-		while (!isFinished(processes)) {
-
-			transferArrivingProcesses();
-			
+		while (!isFinished(processes)) {			
 			//checkIfReadyToReturn();
-			
-			while(!readyQueue.isEmpty()) {
-				
-				
-				// remove process
-				removeFinishedProcesses();
-				
-				
-				// add process
-				
-				Process p = loadProcess();
-				
-				printInterestingEvent(p.getNextArrivalTime(), "Process "+ p.getProcessID() + " arrived (requires " + p.getFrames() + " frames)");
-				
-				if(frames.getEmptyFrames() >= p.getFrames()) {
-					
-					int start = frames.scanForNextFit(lastFitLocation, p.getFrames());
-					
-					if (start < 0) {
-						frames.defrag();
-						start = frames.scanForNextFit(lastFitLocation, p.getFrames());
-					}
-					
-					lastFitLocation = frames.changeFrames(p.getProcessID(), start, p.getFrames());
-					
-					workingQueue.add(p);
-					
-					printInterestingEvent(p.getNextArrivalTime(), "Placed process "+ p.getProcessID() + ":");
-										
-					
-				} else {
-					printInterestingEvent(p.getNextArrivalTime(), "Cannot place process "+ p.getProcessID() + " -- skipped!");
-				}
-				
 
-				
+			while(!readyQueue.isEmpty()) {
+
+
+				// remove process
+				removeProcesses(frames);
+
+
+				addProcesses(frames);
+
+
+
 				System.out.println(frames.toString());
 
-				
 			}
 
-
-			if (!readyQueue.isEmpty()) {
-	
-				
-				/*
-
-				if ( p.getNumCurrentBurst() > 0 ) {
-
-					if (!blockedQueue.isEmpty()) {
-						
-						if (blockedQueue.getFirst().getReturnTime() == p.getBurstFinishTime()){
-
-							moveToBlocked(p);
-
-							checkIfReadyToReturn();
-
-						} else {
-
-							checkIfReadyToReturn();
-
-							moveToBlocked(p);
-						} 
-						
-					} else {
-						
-						checkIfReadyToReturn();
-						moveToBlocked(p);
-					}
-
-
-				} else {
-					
-					checkIfReadyToReturn();
-					
-					terminateProcess(p);
-
-					//debug(p); 
-					
-				} */
-
-			//	elapsedTime += unloadTime;
-
-			} else {
+			if(readyQueue.isEmpty()) {
 
 				elapsedTime++; /* Because nothing is happening if the readyQueue is empty */
-
+				removeProcesses(frames);
 			}
 
+			transferArrivingProcesses();
+
+
 		} /* End While */
-		
+
 		printInterestingEvent(elapsedTime, "Simulator ended (Contiguous -- Next-Fit)");
+	}
+
+
+	private void addProcesses(Frames frames) {
+		// add process
+
+		Process p = loadProcess();
+		
+		//debug(p);
+
+		printInterestingEvent(p.getNextArrivalTime(), "Process "+ p.getProcessID() + " arrived (requires " + p.getFrames() + " frames)");
+
+		if(frames.getEmptyFrames() >= p.getFrames()) {
+
+			int start = frames.scanForNextFit(lastFitLocation, p.getFrames());
+
+			if (start < 0) {
+				printInterestingEvent(p.getNextArrivalTime(), "Cannot place process "+ p.getProcessID() + " starting defragmentation");
+				frames.defrag();
+				elapsedTime += frames.getBusyFrames();
+				
+				
+				/// manipulate rall processes arrival times
+				p.setNextArrivalTime(p.getNextArrivalTime() + frames.getBusyFrames());
+
+				printInterestingEvent(p.getNextArrivalTime(), "Defragmentation complete (moved "+ frames.getBusyFrames() + "frames: " + workingQueue.toString());
+				System.out.println(frames.toString());
+				start = frames.scanForNextFit(lastFitLocation, p.getFrames());
+			}
+
+			lastFitLocation = frames.changeFrames(p.getProcessID(), start, p.getFrames());
+			p.setPlacement(start);
+
+			workingQueue.add(p);
+			
+			Collections.sort(workingQueue, new ProcessSortByReturnTime());
+
+
+			printInterestingEvent(p.getNextArrivalTime(), "Placed process "+ p.getProcessID() + ":");
+
+
+		} else {
+			printInterestingEvent(p.getNextArrivalTime(), "Cannot place process "+ p.getProcessID() + " -- skipped!");
+		
+			int n = p.setNextTimes();
+			
+			if (n >= 0) {
+				readyQueue.add(p);
+				sort(readyQueue);
+			}
+		}
+
 	}
 
 
@@ -174,7 +160,7 @@ public class NextFit extends Algorithm {
 				p.setProcessState(Process.ProcessState.READY);
 
 				readyQueue.addLast(p);
-				
+
 			}
 		}
 	}
@@ -184,17 +170,34 @@ public class NextFit extends Algorithm {
 	 * {@inheritDoc}
 	 */
 
-	public boolean removeFinishedProcesses() {
+	public boolean removeProcesses(Frames frames) {
 
 		boolean ready = false;
 
 		while ( (!workingQueue.isEmpty()) && workingQueue.getFirst().getReturnTime() <= elapsedTime){
 
 			Process p = workingQueue.removeFirst();
+			
+			frames.changeFrames(".", p.getPlacement(), p.getFrames());
 
-			returnToReady(p);
+			printInterestingEvent(p.getReturnTime(), "Process " + p.getProcessID() + " removed: ");
+			System.out.println(frames.toString());
 
-			printInterestingEvent(p.getReturnTime(), "Process " + p.toString() + " removed: ");
+			int n = p.setNextTimes();
+			p.setPlacement(0);
+			lastFitLocation = 0;
+
+			if (n < 0) {
+				p.setProcessState(Process.ProcessState.FINISHED);
+			} else {
+
+				p.setProcessState(Process.ProcessState.READY);
+				readyQueue.addLast(p);
+				sort(readyQueue);
+
+			}
+			
+			//debug(p);
 
 			ready = true;
 
@@ -224,6 +227,8 @@ public class NextFit extends Algorithm {
 
 	protected void sort(LinkedList<Process> rq) {
 
+		Collections.sort(readyQueue, new ProcessSortByArrivalTime());
+
 	}
 
 
@@ -250,26 +255,26 @@ public class NextFit extends Algorithm {
 
 	public void performBurst(Process p) {
 
-	//	printInterestingEvent(elapsedTime, "Process " + p.toString() + " started using the CPU", readyQueue);
+		//	printInterestingEvent(elapsedTime, "Process " + p.toString() + " started using the CPU", readyQueue);
 
-	//	p.setStartTime(elapsedTime); 		/* Set start time for this burst */	
+		//	p.setStartTime(elapsedTime); 		/* Set start time for this burst */	
 
-	//	p.setArrivalTime(p.getReturnTime());
+		//	p.setArrivalTime(p.getReturnTime());
 
 
 		/* Perform the "burst" */
 
 		//elapsedTime += p.getCpuBurstTime();
 
-	//	totalCPUBurstTime += p.getCpuBurstTime();
+		//	totalCPUBurstTime += p.getCpuBurstTime();
 
-//	p.setBurstFinishTime(elapsedTime);
+		//	p.setBurstFinishTime(elapsedTime);
 
-	//	p.setNumBursts(p.getNumCurrentBurst() - 1);
+		//	p.setNumBursts(p.getNumCurrentBurst() - 1);
 
-	//	p.setWaitTime(p.getWaitTime() + (p.getStartTime() - p.getArrivalTime()) - loadTime); /* Don't count  this processes load time */
+		//	p.setWaitTime(p.getWaitTime() + (p.getStartTime() - p.getArrivalTime()) - loadTime); /* Don't count  this processes load time */
 
-	//	p.setTurnAroundTime(p.getTurnAroundTime() + (p.getBurstFinishTime() - p.getArrivalTime()));
+		//	p.setTurnAroundTime(p.getTurnAroundTime() + (p.getBurstFinishTime() - p.getArrivalTime()));
 
 
 	}
@@ -283,7 +288,7 @@ public class NextFit extends Algorithm {
 
 		p.setProcessState(Process.ProcessState.FINISHED);
 
-	//	printInterestingEvent(elapsedTime, "Process " + p.toString() + " terminated", readyQueue);
+		//	printInterestingEvent(elapsedTime, "Process " + p.toString() + " terminated", readyQueue);
 
 	}
 
@@ -295,17 +300,16 @@ public class NextFit extends Algorithm {
 	@Override
 	public void moveToBlocked(Process p) {
 
-	//	printInterestingEvent(elapsedTime, "Process " + p.toString() + " completed a CPU burst; " + p.getNumCurrentBurst() + " to go", readyQueue);
+		//	printInterestingEvent(elapsedTime, "Process " + p.toString() + " completed a CPU burst; " + p.getNumCurrentBurst() + " to go", readyQueue);
 
 		p.setProcessState(Process.ProcessState.BLOCKED);
 
-	//	p.setReturnTime(p.getBurstFinishTime() + p.getIoTime());
+		//	p.setReturnTime(p.getBurstFinishTime() + p.getIoTime());
 
 		blockedQueue.add(p);
 
-		Collections.sort(blockedQueue, new ProcessSortByReturnTime());
 
-	//	printInterestingEvent(elapsedTime, "Process " + p.toString() + " blocked on I/O until time " + p.getReturnTime() + "ms", readyQueue);
+		//	printInterestingEvent(elapsedTime, "Process " + p.toString() + " blocked on I/O until time " + p.getReturnTime() + "ms", readyQueue);
 
 	}
 
@@ -316,7 +320,14 @@ public class NextFit extends Algorithm {
 
 	@SuppressWarnings("unused")
 	private void debug(Process p) {
+		System.out.println("Contents of RQ " + readyQueue.toString());
+		System.out.println("Contents of WQ " + workingQueue.toString());
 		System.out.print("Process " + p.getProcessID());
+		System.out.print(" Next Arrival: " + p.getNextArrivalTime());
+		System.out.print(" Next Run: " + p.getNextRunTime());
+		System.out.println(" Next Return: " + p.getReturnTime());
+		
+		
 	}
 
 }

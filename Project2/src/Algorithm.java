@@ -45,7 +45,7 @@ public abstract class Algorithm {
 	 * @return true if there were elements to return, and o.w false
 	 */
 
-	public abstract boolean removeFinishedProcesses();
+	//public abstract boolean removeFinishedProcesses();
 
 
 	/**

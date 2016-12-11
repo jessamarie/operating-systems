@@ -1,5 +1,5 @@
 /**  Project1.java
- *  @author Jessica Barre, Sabbir Rashid
+ *  @author Jessica Barre
  */
 
 

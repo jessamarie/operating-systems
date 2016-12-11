@@ -26,6 +26,7 @@ public class Process {
 	private int nextRunTime;
 	private int nthRun;
 	private int finishTime;
+	private int placement;
 	
 	private ProcessState processState;
 	public enum ProcessState {
@@ -69,6 +70,7 @@ public class Process {
 		this.nextArrivalTime = arrivalTimes[0];
 		this.nextRunTime = runTimes[0];
 		this.nthRun = 0;
+		this.placement = 0;
 
 	}
 
@@ -86,7 +88,8 @@ public class Process {
 			secondHalf += " " + arrivalTimes[i] + "/" + runTimes[i]; 
 		}
 
-		return firstHalf + secondHalf;
+		//return firstHalf + secondHalf;
+		return getProcessID();
 	} 
 
 
@@ -149,6 +152,22 @@ public class Process {
 
 	public void setProcessState(ProcessState processState) {
 		this.processState = processState;
+	}
+
+
+	/**
+	 * @return the placement
+	 */
+	public int getPlacement() {
+		return placement;
+	}
+
+
+	/**
+	 * @param placement the placement to set
+	 */
+	public void setPlacement(int placement) {
+		this.placement = placement;
 	}
 
 
