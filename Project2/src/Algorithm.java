@@ -1,30 +1,144 @@
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
-import java.util.Queue;
+
+/**
+ * Algorithms is an abstract class meant to hold the similar
+ * code which is used in a memory placement algorithm
+ * 
+ * overview of a memory placement algorithm:
+ * 
+ * - Processes arriving at elapsed time are added to the readyQueue
+ * - While there are still unfinished processes
+ *   - While workingQueue is not empty
+ *       - remove processes that are finished running. 
+ *       - Mark either finished or return to readyQueue
+ *     End While
+ *   - While readyQueue is not empty 
+ *     - add processes to memory that are arriving
+ *       based for a contiguous or non-contiguous algorithm
+ *     - set next interval, if any
+ *     - mark as running
+ *      - Add these processes to the working Queue
+ *     End While
+ *   - increment elapsed time by one
+ *   - transfer new processes to the readyQueue
+ * End While
+ * */
 
 public abstract class Algorithm {
 
 	protected ArrayList<Process> processes;
-	protected LinkedList<Process> readyQueue;   /* process is ready to use the CPU */
-	protected LinkedList<Process> blockedQueue;  /* process state blocked during IO */
+	private int elapsedTime;
 
-	protected int elapsedTime;
-	protected int m;                        /* default number of processes available in the CPU */
-	protected int t_cs;					  /* default time to context switch */
-	protected int loadTime;
-	protected int unloadTime;
+	protected LinkedList<Process> readyQueue;
+	protected LinkedList<Process> workingQueue;
 
 	public Algorithm(ArrayList<Process> processes) {
-		super();
 		this.processes = processes;
+		this.elapsedTime = 0;
+
+		readyQueue = new LinkedList<Process>(); 
+		workingQueue = new LinkedList<Process>();
+
 	}
 
-	/** 
-	 * The run method runs the processes based on the desired algorithms. 
+
+	/* SETTERS and GETTERS */
+
+
+	/**
+	 * @return the elapsedTime
 	 */
 
-	public abstract void run();
+	public int getElapsedTime() {
+		return elapsedTime;
+	}
+
+
+	/**
+	 * @param elapsedTime the elapsedTime to set
+	 */
+
+	public void setElapsedTime(int elapsedTime) {
+		this.elapsedTime = elapsedTime;
+	}
+
+
+	/**
+	 * @return the readyQueue
+	 */
+
+	public LinkedList<Process> getReadyQueue() {
+		return readyQueue;
+	}
+
+
+	/**
+	 * @param readyQueue the readyQueue to set
+	 */
+
+	public void setReadyQueue(LinkedList<Process> readyQueue) {
+		this.readyQueue = readyQueue;
+	}
+
+
+	/**
+	 * @return the workingQueue
+	 */
+
+	public LinkedList<Process> getWorkingQueue() {
+		return workingQueue;
+	}
+
+
+	/**
+	 * @param workingQueue the workingQueue to set
+	 */
+
+	public void setWorkingQueue(LinkedList<Process> workingQueue) {
+		this.workingQueue = workingQueue;
+	}
+
+
+	/* Algorithm methods */
+
+
+	/**
+	 * {@inheritDoc}
+	 */
+
+	protected int run(Frames frames) {
+
+		setElapsedTime(0);
+
+		transferArrivingProcesses(processes, getReadyQueue());
+
+		/* Loop terminates when all processes are finished */
+
+		while (!isFinished(processes)) {
+
+			while ( (!getWorkingQueue().isEmpty()) && getWorkingQueue().getFirst().getReturnTime() <= getElapsedTime()) {
+				removeProcess(frames);
+			}
+
+			while ( (!getReadyQueue().isEmpty()) && getReadyQueue().getFirst().getNextArrivalTime() <= getElapsedTime()) {
+				addProcess(frames);
+			}
+
+			setElapsedTime(getElapsedTime() + 1); /* Increment time by one */
+
+			transferArrivingProcesses(processes, getReadyQueue());
+
+
+		} /* End While */
+
+		return getElapsedTime() - 1;
+
+	}
+
 
 	/** 
 	 *  transferArrivingProcesses adds new processes to the readyQueue 
@@ -33,116 +147,148 @@ public abstract class Algorithm {
 	 *  @effects adds processes to the readyQueue
 	 */
 
-	public abstract void transferArrivingProcesses();
+	public void transferArrivingProcesses(ArrayList<Process> processes, LinkedList<Process> q) {
+
+		for(Process p: processes){
+
+			if(p.getProcessState() == Process.ProcessState.NEW &&
+					p.getNextArrivalTime() <= elapsedTime) {
+
+				changeProcessState(processes, p, Process.ProcessState.READY);
+
+				addToQueue(q, p, new ProcessSortByArrivalTime());
+
+			}
+		}
+	}
+
+
+	/** 
+	 * @param frames
+	 */
+
+	public void removeProcess(Frames frames) {
+
+		Process p = loadProcess(getWorkingQueue(), new ProcessSortByReturnTime());
+
+		removeProcessFromMemory(frames, p);
+
+		updateProcessStatus(p);
+	}
 
 
 	/**
-	 * checkIfReadyToReturn checks if the blockedQueue has any elements 
-	 * left to return
-	 * 
-	 * @effects sends any elements that are ready to be returned to
-	 *          the readyQueue
-	 * @return true if there were elements to return, and o.w false
+	 * @param frames
+	 * @param p
 	 */
 
-	//public abstract boolean removeFinishedProcesses();
+	private void removeProcessFromMemory(Frames frames, Process p) {
+
+		frames.clear(p.getProcessID());
+
+		printInterestingEvent(p.getReturnTime(), "Process " + p.getProcessID() + " removed:");
+
+		System.out.println(frames.toString());
+	}
 
 
 	/**
-	 * returnToReady returns a process to the readyQueue if it's return time
-	 * is less than the elapsed time
+	 * addProcess adds a process to the workingQueue
 	 * 
-	 * @effects removes a process from blockedQueue and adds to readyQueue
-	 *          changes state to READY
+	 * @param frames
+	 * 
 	 */
 
-	public abstract void returnToReady(Process p);
+	protected void addProcess(Frames frames) {
+
+		/* Load the first process */
+
+		Process p = loadProcess(getReadyQueue(), new ProcessSortByArrivalTime());
+
+		printInterestingEvent(p.getNextArrivalTime(), "Process "+ p.getProcessID() + " arrived (requires " + p.getFrames() + " frames)");
+
+		/* Check to see if there are enough frames left to
+		 * place the process, o.w skip this interval */
+
+		if(frames.getEmptyFrames() >= p.getFrames()) {
+			placeProcessIntoMemory(frames, p);
+
+		} else {
+			skipProcessInterval(p);
+		}
+
+		System.out.println(frames.toString());
+
+	}
 
 
 	/**
-	 * sort sorts the readyQueue if on the simulation's algorithm
-	 * depends on it.
+	 * placePocess places a process into memory
+	 *  
+	 * must be overridden in a subtype. 
 	 * 
-	 * @param rq
-	 * @effects sorts rq
+	 * @param frames
+	 * @param p
 	 */
-	protected abstract void sort(LinkedList<Process> rq);
+
+	protected abstract void placeProcessIntoMemory(Frames frames, Process p);
 
 
 	/**
-	 * loadProcess removes the first element of the readyQueue and
-	 * changes it's state to RUNNING
-	 * 
-	 * @return p the process to be loaded
-	 * @effects changes the state of P to running and adds the load time
-	 *          to the elapsed time
+	 * @param p
 	 */
 
-	public abstract Process loadProcess();
+	protected void skipProcessInterval(Process p) {
+
+		printInterestingEvent(p.getNextArrivalTime(), "Cannot place process "+ p.getProcessID() + " -- skipped!");
+
+		int n = p.setNextTimes();
+
+		if (n >= 0) {
+			addToQueue(getReadyQueue(), p, new ProcessSortByArrivalTime());
+		} else {
+			changeProcessState(processes, p, Process.ProcessState.FINISHED);
+		}
+	}
 
 	/**
-	 * performBurst performs a cpu burst
+	 * loadProcess removes the first element from a queue and sorts
 	 * 
-	 * @param p the process currently running
-	 * @effects performs a cpu burst and changes waitTime, TurnAroundTime, 
-	 *          numBursts, burstFinishTime, elapsedTime, numContextSwitches,
-	 *          and totalCPUBurstTime
+	 * @param q the queue
+	 * @effects removes the first element of q
+	 * @returns the first element of q
 	 */
 
-	public abstract void performBurst(Process p);
+	public Process loadProcess(LinkedList<Process> q, Comparator<Process> c) {
+		Process p = q.removeFirst();
+		sort(q, c);
+		return p;
+	}
 
 
 	/**
-	 * terminateProcess is called when a process has zero bursts left to process.
-	 * The process is summarized and then it's state is changed to finished.
+	 * addToQueue adds an element to a queue and sorts
 	 * 
-	 * @param p the process to terminate
-	 * @effects changes the state of p to finished, then adds it's wait time to totalWaitTime, 
-	 *          and adds it's turnAroundTime to totalTurnAroundTime
+	 * @param q the queue
+	 * @param p the process to add
+	 * @param c the sorting comparator
+	 * @effects adds to to the end of q and sorts
 	 */
 
-	public abstract void terminateProcess(Process p);
-
-	/**
-	 * moveToBlocked moves a process to the blockedQueue
-	 * 
-	 * @param p the process to be moved to block
-	 * @effects changes the state of p to BlOCKED, sets it's return time,  and adds it to the blockedQueue.
-	 *          The blocked queue is also sorted by return time to ensure that processes return to the 
-	 *          readyQueue in the correct order.
-	 *          
-	 */
-
-	public abstract void moveToBlocked(Process p);
+	public void addToQueue(LinkedList<Process> q, Process p, Comparator<Process> c) {
+		q.addLast(p);
+		sort(q, c);
+	}
 
 
 	/**
 	 * @param t the current elapsed time
 	 * @param details the interesting details of the event
-	 * @param processes the queue to print
 	 */
 
 	protected void printInterestingEvent(int t, String details) {
-		
+
 		System.out.println("time " + t + "ms: " + details);
-		
-
-		/*if (!processes.isEmpty()) {
-
-			System.out.print("time " + t + "ms: " + details + " [Q");
-
-			for (Process p : processes) {
-				System.out.print(" " + p.getProcessID());
-
-			}
-
-			System.out.println("]");
-
-		} else {
-			System.out.println("time " + t + "ms: " + details + " [Q empty]");
-		}
-		*/
-
 
 	}
 
@@ -165,6 +311,93 @@ public abstract class Algorithm {
 		}
 
 		return true;
+	}
+
+
+	/**
+	 * @param processes the ArrayList of processes to postpone
+	 * @param postponementTime the time to defer arrivalTimes
+	 *        
+	 * @return true if all processes are FINISHED, o.w false
+	 */
+
+	protected void postponeAllProcesses(ArrayList<Process> processes, int postponementTime) {
+
+		for (Process process : processes) {
+
+			if (process.getProcessState() != Process.ProcessState.FINISHED) {
+
+				process.setPostpone(postponementTime);
+
+			}
+		}
+	}
+
+
+	/**
+	 * changeProcessState changes the ProcessState of a process
+	 * 
+	 * @param processes the ArrayList of processes to search
+	 * @param p1 the process to search for
+	 * @param state the state to change p1 to
+	 *        
+	 * @effects changes the state of p1 to state
+	 */
+
+	protected void changeProcessState(ArrayList<Process> processes, Process p1, Process.ProcessState state) {
+
+		for (Process p2: processes) {
+			if(p1.getProcessID() == p2.getProcessID()) {
+				p2.setProcessState(state);
+
+			}
+		}
+
+	}
+
+
+	/**
+	 * @param p
+	 */
+
+	protected void updateProcessStatus(Process p) {
+
+		int n = p.setNextTimes();
+
+		if (n < 0) {
+			changeProcessState(processes, p, Process.ProcessState.FINISHED);
+		} else {
+
+			changeProcessState(processes, p, Process.ProcessState.READY);
+			addToQueue(getReadyQueue(), p, new ProcessSortByArrivalTime());
+		}
+	}
+
+
+	/**
+	 * @param frames
+	 * @param p
+	 * @param start
+	 */
+
+	protected void useFrames(Frames frames, Process p, int start) {
+		frames.use(p.getProcessID(), start, p.getFrames());
+	}
+
+
+	/**
+	 * sort sorts the queue if on the simulation's algorithm
+	 * depends on it.
+	 * 
+	 * @param q the queue
+	 * @param c the comparator
+	 * @effects sorts q based on c
+	 */
+
+	protected void sort(LinkedList<Process> q, Comparator<Process> c) {
+
+		Collections.sort(q, c);
+
 	}
 
 

@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.HashSet;
 
 /** 
  *  Frames is a class which represents a set of memory units.
@@ -25,34 +26,23 @@ public class Frames {
 	private int columns;
 	private int busyFrames;
 	private int emptyFrames;
-
-
-
+	private int numDefraggedFrames;
+	private int positionOfLastPlaced;
 
 	/**
 	 * Constructor
 	 */
 
 	public Frames() {
-		super();
 
 		blocks = new ArrayList<String>();
 		this.rows = 8;
 		this.columns = 32;
 
-		init();
-
-	}
-
-
-	/**
-	 * init resets the frames back to it's original state
-	 */
-
-	public void init(){
-
-		this.setBusyFrames(0);
-		this.setEmptyFrames(getSize());
+		this.busyFrames = 0;
+		this.emptyFrames = this.rows * this.columns;
+		this.numDefraggedFrames = 0;
+		this.positionOfLastPlaced = 0;
 
 		for (int i = 0; i < getSize(); i++) {
 			blocks.add(".");
@@ -98,83 +88,53 @@ public class Frames {
 
 
 	/**
-	 * scanForNextFit returns the starting position of
-	 * the next possible fit or -1 if it's not possible
-	 */
-
-	public int scanForNextFit(int start, int blocksToFill) {
-
-		int i, j;
-
-		int fillableBlocks = 0;
-		int endPosition = 0;
-
-		/* start from the last fit process */
-		for (i = start; i < getSize() && fillableBlocks < blocksToFill; i++) {
-
-
-			if ( blocks.get(i) == "." ) {
-				fillableBlocks++;
-				endPosition = i;
-
-			} else {
-				fillableBlocks = 0;
-			}
-
-		}
-
-		/* continue from beginning if there is no space found */
-		for (i = 0; i < start && fillableBlocks < blocksToFill; i++) {
-
-
-			if ( blocks.get(i) == "." ) {
-				fillableBlocks++;
-				endPosition = i;
-
-			} else {
-				fillableBlocks = 0;
-			}
-
-		}
-
-		int startPosition = -1;
-		if (fillableBlocks == blocksToFill) {
-			startPosition = endPosition - blocksToFill + 1;
-		}
-
-		return startPosition;
-
-
-	} 
-
-	/**
-	 * vchangeFrames
+	 * use
+	 * 
+	 * @returns the end position of the frame placement
 	 */
 
 
-	public int changeFrames(String str, int start, int blocksToFill) {
+	public int use(String str, int start, int blocksToFill) {
 
 		int blocksFilled = 0;
 
-		int i;
+		int endPosition;
 
-		for (i = start; i < getSize() && blocksFilled < blocksToFill; i++) {
-			blocks.set(i, str);
+		for (endPosition = start; endPosition < getSize() && blocksFilled < blocksToFill; endPosition++) {
+			blocks.set(endPosition, str);
 			blocksFilled++;
 
-
-			/* change busyFrames and emptyFrames */ 	
-			if(str == ".") {
-				this.setBusyFrames(this.getBusyFrames() - 1);
-				this.setEmptyFrames(this.getEmptyFrames() + 1);
-			} else {
-				this.setBusyFrames(this.getBusyFrames() + 1);
-				this.setEmptyFrames(this.getEmptyFrames() - 1);
-			}
+			this.setBusyFrames(this.getBusyFrames() + 1);
+			this.setEmptyFrames(this.getEmptyFrames() - 1);
 
 		}
 
-		return i;
+		setPositionOfLastPlaced(endPosition);
+
+
+		return endPosition;
+	}
+
+	/**
+	 * clear
+	 * 
+	 */
+
+
+	public void clear(String str) {
+
+
+		for (int i = 0; i < getSize(); i++) {
+
+			if(blocks.get(i) == str) {
+				blocks.set(i, ".");
+
+				this.setBusyFrames(this.getBusyFrames() - 1);
+				this.setEmptyFrames(this.getEmptyFrames() + 1);
+
+
+			}
+		}
 	}
 
 
@@ -182,23 +142,59 @@ public class Frames {
 	 * defrag first removes all of the "." in the blocks ArrayList
 	 * and then appends "." at the end of the ArrayList until the
 	 * size of the Arraylist = rows*columns
+	 * 
+	 * @returns a string containing the processes defraged
 	 */
 
-	public void defrag() {
+	public String defrag() {
 
-		for (int i = 0; i < blocks.size(); i++) {
+		setNumDefraggedFrames(0);
+
+		String processes = "";
+		ArrayList<String> al = new ArrayList<>();
+
+		/* Don't defragment untill you reach a "." */
+		int j = 0;
+		while (j < getSize() && blocks.get(j) != ".") {
+			j++;
+		}
+
+		for (int i = j; i < blocks.size(); i++) {
 
 			if(blocks.get(i) == ".") {
-				blocks.remove(i);				
-				i = -1; /* Since the placement of all things shift left,
-				           we need to restart the loop */
-			}
 
+				blocks.remove(i);	
+
+				i = j - 1; /* Since the placement of all things shift left,
+				           we need to restart the loop */
+			} else {
+				al.add(blocks.get(i));
+			}
 		}
 
 		for (int i = blocks.size(); i < getSize(); i++) {
 			blocks.add(".");
 		}
+
+		setNumDefraggedFrames(getBusyFrames() - j);
+
+
+		/* Remove duplicates in al */
+
+		HashSet<String> hs = new HashSet<>();
+		hs.addAll(al);
+		al.clear();
+		al.addAll(hs);
+
+		processes += al.get(0);
+		for (int i = 1; i < al.size(); i++) {
+			processes += ", " + al.get(i);
+
+		}
+
+		processes = processes.trim();
+
+		return processes;
 
 
 	}
@@ -233,6 +229,55 @@ public class Frames {
 	 */
 	public void setEmptyFrames(int emptyFrames) {
 		this.emptyFrames = emptyFrames;
+	}
+
+	/**
+	 * @return the numDefraggedFrames
+	 */
+	public int getNumDefraggedFrames() {
+		return numDefraggedFrames;
+	}
+
+	/**
+	 * @param numDefraggedFrames the numDefraggedFrames to set
+	 */
+	public void setNumDefraggedFrames(int numDefraggedFrames) {
+		this.numDefraggedFrames = numDefraggedFrames;
+	}
+
+	/**
+	 * @return the positionOfLastPlaced
+	 */
+	public int getPositionOfLastPlaced() {
+		return positionOfLastPlaced;
+	}
+
+	/**
+	 * @param positionOfLastPlaced the positionOfLastPlaced to set
+	 */
+	public void setPositionOfLastPlaced(int positionOfLastPlaced) {
+		this.positionOfLastPlaced = positionOfLastPlaced;
+	}
+
+	/**
+	 * getScanPosition
+	 * @return the position to scan from
+	 */
+	public int getScanPosition() {
+		return 0;
+	}
+
+	/**
+	 * scan
+	 * @param position the position to scan from
+	 * @param frames the memory set
+	 * @return the starting position of the place to add 
+	 *         the process to, o.w -1 if there is not a 
+	 *         large enough sized partition
+	 */
+	public int scan(int position, int frames) {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 

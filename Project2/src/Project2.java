@@ -1,89 +1,130 @@
-/**  Project1.java
+/**  
  *  @author Jessica Barre
+ *  @name:  Project2.java (main class)
+ *  Date Due: Dec 12, 2016
  */
 
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 
 public class Project2 {
 
+	/**
+	 * @param args
+	 */
 	public static void main(String[] args) {
 
-		if (args.length != 1) {
-			System.err.println("ERROR: Invalid arguments\nUSAGE: .a/out <input-file> <stats-output-file>\n");
+		if (args.length != 2) {
+			System.err.println("ERROR: Invalid arguments\nUSAGE: .a/out <input-file> <input-file>\n");
 		}
 
-		String inputfile = args[0];
-		//String outputfile = args[1];
+		String file1 = args[0];
+		String file2 = args[1];
 
 		ArrayList<Process> processes = new ArrayList<Process>();
+		ArrayList<String> references = new ArrayList<String>();
 
-		/** read data from the input file **/
+		/** read data from the input files **/
 
 		try {
-			readData(inputfile, processes);
+			readProcesses(file1, processes);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("ERROR: Invalid input file format\n"
-					+ inputfile + " " + e);
+					+ file1 + " " + e);
+		}
+
+		try {
+			readReferences(file2, references);
+		} catch (IOException e) {
+			throw new IllegalArgumentException("ERROR: Invalid input file format\n"
+					+ file2 + " " + e);
 		}
 
 		Collections.sort(processes, new ProcessSortByArrivalTime());
-		
+
 
 		/* Simulate each algorithm **/	
 
 
 		/* Next-Fit */
 
-		NextFit nextFit = new NextFit(processes);
-		
-		nextFit.run();
+		Algorithm cont = new Contiguous(processes);
+
+		System.out.println("time 0ms: " + "Simulator started (Contiguous -- Next-Fit)");
+
+		int time = cont.run(new NextFitFrames());
+
+		System.out.println("time " + time + "ms: " + "Simulator ended (Contiguous -- Next-Fit)");
+
+		System.out.println();
 
 		resetProcesses(processes);
 
 
+		/* Best-Fit */
 
-		/* Shortest Job First */
+		System.out.println("time 0ms: " + "Simulator started (Contiguous -- Best-Fit)");
 
-		//SJF sjf = new SJF(processes);
+		time = cont.run(new BestFitFrames());
 
-		//Statistics sjfStats = new Statistics();
+		System.out.println("time " + time + "ms: " + "Simulator ended (Contiguous -- Best-Fit)");
 
-		//sjf.run(sjfStats);
+		System.out.println();
 
-		//resetProcesses(processes);
-
-
-		/* Round Robin */
-
-		//RR rr = new RR(processes);
-
-		//Statistics rrStats = new Statistics();
-
-		//rr.run(rrStats);
-
-		//resetProcesses(processes);
+		resetProcesses(processes);
 
 
-		/** write data to the output file **/
-		/*
-		try {
-			writeData(outputfile, fcfsStats, sjfStats, rrStats);
-		} catch (IOException e) {
-			throw new IllegalArgumentException("Error can't find file: "
-					+ inputfile + " " + e);
-		}
+		/* Worst-Fit */
+		System.out.println("time 0ms: " + "Simulator started (Contiguous -- Worst-Fit)");
 
-		 */
+		time = cont.run(new WorstFitFrames());
+
+		System.out.println("time " + time + "ms: " + "Simulator ended (Contiguous -- Worst-Fit)");
+
+
+		System.out.println();
+
+		resetProcesses(processes);
+
+
+		/* Non-Contiguous First-Fit */
+
+		Algorithm noncont = new NonContiguous(processes);
+
+		System.out.println("time 0ms: " + "Simulator started (Non-contiguous)");
+
+		time = noncont.run(new NonContiguousFrames());
+
+		System.out.println("time " + time + "ms: " + "Simulator ended (Non-contiguous)");
+
+		resetProcesses(processes);
+
+		System.out.println();
+		
+		
+		/* Append memory placement algorithms to the end */
+		
+		VirtualMemory vm = new VirtualMemory(references);
+		
+		vm.doOPT();
+		
+		vm.init();
+		
+		System.out.println();
+		
+		vm.doLRU();
+		
+		vm.init();
+		
+		System.out.println();
+		
+		vm.doLFU();
+
+
 
 	}
 
@@ -104,14 +145,12 @@ public class Project2 {
 
 	/** 
 	 * @param: filename The path to the text file that contains the processes                                                                                                
-	 * @param: fps An ArrayList to store all of the processes for fcfs
-	 * @param: sps An ArrayList to store all of the processes for sjf
-	 * @param: rrps An ArrayList to store all of the processes for rrps
+	 * @param: processes An ArrayList to store all of the processes
 	 * @effects: Reads processes in from a file
 	 * @throws:  IOException                                                                       
 	 */
 
-	public static void readData(String filename, ArrayList<Process> processes)  throws IOException {
+	public static void readProcesses(String filename, ArrayList<Process> processes)  throws IOException {
 
 		BufferedReader reader = new BufferedReader(new FileReader(filename));
 
@@ -182,7 +221,7 @@ public class Project2 {
 				}
 
 
-				Process p = new Process(pid, frames, arrTimes, runTimes, numRuns);
+				Process p = new Process(pid, frames, arrTimes, runTimes);
 
 				processes.add(p);
 
@@ -200,43 +239,34 @@ public class Project2 {
 	}
 
 	/** 
-	 * writeData creates an output file
-	 * 
-	 * @param filename the name of the output file
-	 * @param: fcfs the set of first in first out statistics                                                                                               
-	 * @param: sjf the set of shortest job first statistics
-	 * @param: rr the set round robin statistics    
-	 * @throws IOException 
-	 * @effects: writes processes into an output file
-	 * @throws:                                                                           
+	 * @param: filename The path to the text file that contains the page references                                                                                                
+	 * @param: references An ArrayList to store all of the page references
+	 * @effects: Reads page references in from a file
+	 * @throws:  IOException                                                                       
 	 */
 
-	private static void writeData(String filename, Statistics fcfs, Statistics sjf, Statistics rr) throws IOException {
+	public static void readReferences(String filename, ArrayList<String> references)  throws IOException {
 
-		try {
+		BufferedReader reader = new BufferedReader(new FileReader(filename));
 
-			File file = new File(filename);
-			file.createNewFile();
+		String line = null;
 
-			BufferedWriter writer = new BufferedWriter(new FileWriter(file.getAbsoluteFile()));
+		while ((line = reader.readLine()) != null) {
 
-			writer.write(fcfs.toString());
-			writer.newLine();
-			writer.write(sjf.toString());
-			writer.newLine();
-			writer.write(rr.toString());
+			String[] specs; /** The properties of each process **/
 
-			writer.flush();
-			writer.close();
+			/** If the current line begins with a letter split it by the '|' 
+			 * delimiter. otherwise, ignore and move on to the next line **/
 
-		} catch (FileNotFoundException e) {
-			System.err.println("File Not Found");
-			System.exit(1);
-		} catch (IOException e) {
-			System.err.println("something messed up");
-			System.exit(1);
-		}
+			specs = line.split(" ");
 
-	}
+			for (int i = 0; i < specs.length; i++) {
+				references.add(specs[i]);
+			}
+
+	} /** End while **/
+
+	reader.close();
+}
 
 }

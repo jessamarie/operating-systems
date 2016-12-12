@@ -1,3 +1,6 @@
+/**  
+ *  @author Jessica Barre
+ */
 
 
 import java.util.Comparator;
@@ -5,8 +8,7 @@ import java.util.Comparator;
 /** 
  *  Processes is a class that represents a process
  * 
- *  <proc-id>|<initial-arrival-time>|<cpu-burst-time>|<num-bursts>|<io-time>
- *  A|0|168|5|287
+ *  <proc-id> <required-frames> <arrival-times> <tun-times>
  *    
  */
 
@@ -25,9 +27,8 @@ public class Process {
 	private int nextArrivalTime;
 	private int nextRunTime;
 	private int nthRun;
-	private int finishTime;
-	private int placement;
-	
+	private int postpone;
+
 	private ProcessState processState;
 	public enum ProcessState {
 		NEW,
@@ -36,24 +37,19 @@ public class Process {
 		RUNNING,
 		FINISHED;
 	}
-	
-
-	private int workTimeLeft;
-
-
 
 	/**
 	 * Constructor
 	 */
 
-	public Process(String processID, int frames, int[] arrivalTimes, int[] runTimes, int numRuns) {
+	public Process(String processID, int frames, int[] arrivalTimes, int[] runTimes) {
 		super();
 
 		this.processID = processID;
 		this.frames = frames;
 		this.arrivalTimes = arrivalTimes;
 		this.runTimes = runTimes;
-		this.numRuns = numRuns;
+		this.numRuns = arrivalTimes.length;
 
 		init();
 
@@ -70,7 +66,7 @@ public class Process {
 		this.nextArrivalTime = arrivalTimes[0];
 		this.nextRunTime = runTimes[0];
 		this.nthRun = 0;
-		this.placement = 0;
+		this.postpone = 0;
 
 	}
 
@@ -80,13 +76,13 @@ public class Process {
 
 	public String toString() {
 
-		String firstHalf = getProcessID() + " " + getFrames();
+		/* String firstHalf = getProcessID() + " " + getFrames();
 
-		String secondHalf = "";
+		   String secondHalf = "";
 
 		for (int i = 0; i < numRuns; i++) {
 			secondHalf += " " + arrivalTimes[i] + "/" + runTimes[i]; 
-		}
+		} */
 
 		//return firstHalf + secondHalf;
 		return getProcessID();
@@ -154,31 +150,13 @@ public class Process {
 		this.processState = processState;
 	}
 
-
-	/**
-	 * @return the placement
-	 */
-	public int getPlacement() {
-		return placement;
-	}
-
-
-	/**
-	 * @param placement the placement to set
-	 */
-	public void setPlacement(int placement) {
-		this.placement = placement;
-	}
-
-
 	/**
 	 * @return the arrivalTime
 	 */	
 
 	public int getNextArrivalTime() {
-		return nextArrivalTime;
+		return nextArrivalTime + getPostpone();
 	}
-
 
 	/**
 	 * @param arrivalTime the arrivalTime to set
@@ -187,6 +165,16 @@ public class Process {
 	public void setNextArrivalTime(int nextArrivalTime) {
 		this.nextArrivalTime = nextArrivalTime;
 	}
+
+	public int getPostpone() {
+		return postpone;
+	}
+
+
+	public void setPostpone(int postpone) {
+		this.postpone = postpone;
+	}
+
 
 	/**
 	 * @return the nextRunTime
@@ -204,44 +192,44 @@ public class Process {
 	public void setNextRunTime(int nextRunTime) {
 		this.nextRunTime = nextRunTime;
 	}
-	
+
 
 	/**
 	 * @return the returnTime
 	 */
 
 	public int getReturnTime() {
-		return nextArrivalTime + nextRunTime;
+		return getNextArrivalTime() + getNextRunTime();
 	}
-	
+
 	/**
 	 * setNextTimes sets to next pair of arrival/run time
 	 * @return -1 if no pairs left, o.w 0 if successful
 	 **/
 
 	public int setNextTimes() {
-		
+
 		int done;
-		
+
 		if ( getCurrentRun() == numRuns - 1) {
 			done = -1;
 		} else {
-			
+
 			setToNextRun();
-			
+
 			setNextArrivalTime(getArrivalTimes()[nthRun]);	
 			setNextRunTime(getRunTimes()[nthRun]);	
-			
+
 			done = 0;
-			
+
 		}
-		
-		
+
+
 		return done;
 
 	}
-	
-	
+
+
 	/**
 	 * @return the nthRun
 	 */
@@ -251,8 +239,8 @@ public class Process {
 		return nthRun;
 
 	}
-	
-	
+
+
 	/**
 	 * @effects increments nthRun by 1
 	 */
@@ -260,48 +248,6 @@ public class Process {
 	public void setToNextRun() {
 		nthRun++;
 	}
-
-
-
-	/////////////////////////////////////////////////
-
-
-	/**
-	 * @return the finishTime
-	 */
-
-	public int getfinishTime() {
-		return finishTime;
-	}
-
-
-	/**
-	 * @param finishTime the finishTime to set
-	 */
-
-	public void setfinishTime(int finishTime) {
-		this.finishTime = finishTime;
-	}
-
-
-	/**
-	 * @return the workTimeLeft
-	 */
-
-	public int getWorkTimeLeft() {
-		return workTimeLeft;
-	}
-
-
-	/**
-	 * @param workTimeLeft the workTimeLeft to set 
-	 */
-
-	public void setWorkTimeLeft(int time) {
-		this.workTimeLeft = time;
-	}
-
-
 
 }
 

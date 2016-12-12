@@ -8,7 +8,7 @@ import org.junit.Test;
  * 
  * */
 
-public class AlgorithmTest {
+public class VirtualMemoryTest {
 
 	/**
 	 * @param file1 
@@ -67,8 +67,8 @@ public class AlgorithmTest {
 		System.setOut(os); // redirects standard output to a file, [filename].out 
 		
 		
-		String[] args = {inFilename, "page.test"};
-		Project2.main(args); // Call to YOUR main. May have to rename.
+		String[] args = { inFilename };
+		VirtualMemoryMain.main(args); // Call to YOUR main. May have to rename.
 		System.setIn(in); // restores standard input
 		System.setOut(out); // restores standard output
 		assertTrue(compare(expectedFilename,outFilename));
@@ -79,16 +79,16 @@ public class AlgorithmTest {
 	
 	@Test
 	public void testFile1() throws IOException {
-		runTest("test1");
+		runTest("page1");
 	}
 	
 	@Test
 	public void testFile2() throws IOException {
-		runTest("test2");
+		runTest("page2");
 	}
 	
 	@Test
 	public void testFile3() throws IOException {
-		runTest("test3");
+		runTest("page3");
 	}
 }

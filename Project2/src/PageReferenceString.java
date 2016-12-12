@@ -1,4 +1,4 @@
-package project2.docs;
+
 import java.util.Random;
 
 public class PageReferenceString
