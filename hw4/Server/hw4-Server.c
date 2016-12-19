@@ -62,6 +62,7 @@ int create_socket(struct sockaddr_in* server, unsigned short port) {
 	listen(sd, 5); /* 5 is the max number of waiting clients */
 
 	printf("Started server; listening on port: %d\n", port);
+	fflush(NULL);
 
 	return sd;
 }
@@ -242,9 +243,6 @@ char* store_data(int newsock, char* filename, char* filepath, int bytes , char* 
 		/* store any data after the '\n' character currently
 		 * in the buffer */
 
-
-
-
 		if(bytes < 1) {
 
 			response = malloc( 20 * sizeof(char));
@@ -262,25 +260,22 @@ char* store_data(int newsock, char* filename, char* filepath, int bytes , char* 
 			return response;
 		}
 
-		size_t numtokens;
-		char** content = split_from_content(data, "\n", &numtokens);
-
-		fwrite(content[0], sizeof(char), strlen(content[0]), file);
+		fwrite(data, sizeof(char), strlen(data), file);
 
 		/* while number of bytes rcvd/stored is less
 		 * than expected bytes..*/
 
-
-		int bytes_written = strlen(content[0]);
+		int bytes_written = strlen(data);
 
 		while (bytes_written < bytes){
 
-			//	printf("BYTES WRITTEN: %d bytes %d\n", bytes_written,bytes);
 			/* read more bytes */
 
 			char buff[BUFFER_SIZE];
 
 			int n = recv(newsock, buff,BUFFER_SIZE,0);
+			fflush(NULL);
+
 			buff[n] = '\0';
 
 			if (n < 0) {
@@ -295,6 +290,7 @@ char* store_data(int newsock, char* filename, char* filepath, int bytes , char* 
 
 				bytes_written = bytes_written + n;
 
+			//	printf("BYTES WRITTEN: %d bytes %d\n", bytes_written,bytes);
 			} /* done */
 
 		}
@@ -311,6 +307,7 @@ char* store_data(int newsock, char* filename, char* filepath, int bytes , char* 
 		fclose(file);
 
 		printf( "[child %d] Stored file \"%s\" (%d bytes)\n", getpid(), filename, bytes);
+		fflush(NULL);
 
 		response = malloc( 5 * sizeof(char));
 
@@ -333,6 +330,7 @@ char * read_data(int newsock, char * filename, char* filepath, int offset, int l
 		response = malloc( 30 * sizeof(char));
 		strcpy(response, "ERROR NO SUCH FILE\n");
 		printf("[child %d] Sent %s", getpid(), response);
+		fflush(NULL);
 
 	} else {
 
@@ -341,6 +339,7 @@ char * read_data(int newsock, char * filename, char* filepath, int offset, int l
 			response = malloc( 20 * sizeof(char));
 			strcpy(response, "ERROR INVALID REQUEST\n");
 			printf("[child %d] Sent %s", getpid(), response);
+			fflush(NULL);
 			return response;
 
 		}
@@ -352,6 +351,7 @@ char * read_data(int newsock, char * filename, char* filepath, int offset, int l
 			response = malloc( 20 * sizeof(char));
 			strcpy(response, "ERROR INVALID REQUEST\n");
 			printf("[child %d] Sent %s", getpid(), response);
+			fflush(NULL);
 			return response;
 		}
 
@@ -366,6 +366,7 @@ char * read_data(int newsock, char * filename, char* filepath, int offset, int l
 			response = malloc( 30 * sizeof(char) );
 			strcpy( response, "ERROR INVALID BYTE RANGE\n");
 			printf("[child %d] Sent %s", getpid(), response);
+			fflush(NULL);
 			return response;
 
 		} else {
@@ -399,13 +400,20 @@ char * read_data(int newsock, char * filename, char* filepath, int offset, int l
 
 			strcat( response, (char *) snum );
 			strcat( response, "\n" );
+
+			send(newsock, response, strlen(response), 0);
+			fflush(NULL);
+
 			printf("[child %d] Sent %s", getpid(), response);
-			strcat( response, content);
-			strcat( response, "\n" );
+			fflush(NULL);
+
+			strcpy( response, content);
+			//strcat( response, "\n" );
 
 			fclose(file);
 
 			printf("[child %d] Sent %d bytes of \"%s\" from offset %d\n", getpid(), length, filename, offset);
+			fflush(stdout);
 
 		}
 
@@ -432,9 +440,11 @@ void do_command(size_t numlines, size_t numparts, int newsock, char** parts,
 	if (strcmp(parts[0], "STORE") == 0) {
 
 		if (numparts != 3 || !isDigit(parts[2])) {
+
 			response = malloc( 30 * sizeof(char) );
 			strcpy( response, "ERROR INVALID PARAMETERS\n");
 			printf("[child %d] Sent %s", getpid(), response);
+			fflush(NULL);
 
 		}  else {
 			char filepath[50];
@@ -442,20 +452,28 @@ void do_command(size_t numlines, size_t numparts, int newsock, char** parts,
 			strcat(filepath, parts[1]);
 
 			response = store_data(newsock, parts[1], filepath, atoi(parts[2]), lines[1]);
+
 			printf("[child %d] Sent %s", getpid(), response);
+			fflush(NULL);
 
 		}
 
 	} else if (strcmp(parts[0], "READ") == 0) {
 
 		if (numparts != 4) {
+
 			response = malloc( 30 * sizeof(char) );
 			strcpy( response, "ERROR INVALID PARAMETERS\n");
 			printf("[child %d] Sent %s", getpid(), response);
+			fflush(NULL);
+
 		} else if (!isDigit(parts[2]) || !isDigit(parts[3])) {
+
 			response = malloc( 30 * sizeof(char) );
 			strcpy( response, "ERROR INVALID PARAMETERS\n");
 			printf("[child %d] Sent %s", getpid(), response);
+			fflush(NULL);
+
 		} else {
 
 			char filepath[50];
@@ -468,32 +486,39 @@ void do_command(size_t numlines, size_t numparts, int newsock, char** parts,
 	} else if (strcmp(parts[0], "LIST") == 0) {
 
 		if (numparts != 1) {
+
 			response = malloc( 30 * sizeof(char) );
 			strcpy( response, "ERROR INVALID PARAMETERS\n");
 			printf("[child %d] Sent %s", getpid(), response);
+			fflush(NULL);
+
 		} else {
+
 			response = list_data(newsock);
 			printf("[child %d] Sent %s", getpid(), response);
+			fflush(NULL);
 
 		}
 
 	} else {
+
 		response = malloc( 30 * sizeof(char) );
 		strcpy( response, "ERROR INVALID PARAMETERS\n");
 		printf("[child %d] Sent %s", getpid(), response);
+		fflush(NULL);
+
 	}
 
 	/* Send Acknowledge/Error response  to client*/
 
 	int n = send(newsock, response, strlen(response), 0);
+	fflush(NULL);
 
 	if (n != strlen(response)) {
 		perror("Error send() failed\n.");
 	}
 
 	free(response);
-
-	fflush(NULL);
 }
 
 void connection(int newsock, const struct sockaddr_in* client) {
@@ -506,12 +531,19 @@ void connection(int newsock, const struct sockaddr_in* client) {
 	do {
 
 		n = recv(newsock, buffer, BUFFER_SIZE, 0);
+		fflush(stdout);
+
+	//	printf("Content to write is: %s\n", buffer);
+
 
 		if (n < 0) {
 
 			perror("recv() failed");
+			fflush(NULL);
 
 		} else if (n == 0) {
+
+			fflush(NULL);
 
 			//printf("CHILD %d: Rcvd 0 from recv(); closing socket\n", getpid());
 
@@ -535,6 +567,17 @@ void connection(int newsock, const struct sockaddr_in* client) {
 			size_t numparts;
 
 			parts = strsplit(lines[0], " ", &numparts);
+#if 0
+			size_t j;
+			for (j = 0; j < numlines; j++) {
+				printf("%s\n", lines[j]);
+			}
+
+			for (j = 0; j < numparts; j++) {
+				printf("%s\n", parts[j]);
+			}
+
+#endif
 
 			/* Carry out instruction **/
 			do_command(numlines, numparts, newsock, parts,
@@ -558,8 +601,6 @@ void connection(int newsock, const struct sockaddr_in* client) {
 		}
 
 	} while (n > 0);
-
-
 
 	close(newsock);
 
@@ -604,6 +645,7 @@ int main( int argc, char **argv){
 				(socklen_t*)&fromlen );
 
 		printf("Received incoming connection from: %s\n", inet_ntoa( (struct in_addr)client.sin_addr));
+		fflush(NULL);
 
 		/* handle new socket in a child process,
 	       allowing the parent process to immediately go
